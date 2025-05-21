@@ -15,10 +15,9 @@ Usage:
 Available Commands:
   butane      Creates a butane-based YAML document
   completion  Generate the autocompletion script for the specified shell
-  dhcp4       Creates a DHCPv4 configuration
-  dhcp6       Creates a DHCPv6 configuration
   help        Help about any command
-  matchbox    Interact Matchbox configuration files
+  kea         Creates a DHCPv4 configuration
+  matchbox    Interact with Matchbox service
   netbox      Interact with Netbox CMDB
 
 Flags:
@@ -26,7 +25,7 @@ Flags:
   -l, --log-level string         Log level ’development’ (default) or ’production’
   -e, --netbox-endpoint string   URL of the API
   -t, --netbox-token string      Token used to call Netbox API
-  -o, --output string            Where to write the results (default "console")
+  -o, --output string            Where to write the result (default 'console')
 
 Use "machinecfg [command] --help" for more information about a command.
 ```
@@ -114,5 +113,5 @@ We link the profile and the ignition file together.
 export KEA_CONF=/etc/kea/dhcp4.json
 
 # Allow MAC addresses found on the Netbox devices database to get an offer
-./machinecfg $NETBOX_OPTS dhcp4 server > $KEA_CONF
+./machinecfg $NETBOX_OPTS kea server4 > $KEA_CONF
 ```
