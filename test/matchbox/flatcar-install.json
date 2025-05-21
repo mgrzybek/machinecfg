@@ -1,0 +1,18 @@
+{
+  "id": "flatcar-install",
+  "name": "Flatcar Linux install to disk",
+  "boot": {
+    "kernel": "/assets/flatcar/current/flatcar_production_pxe.vmlinuz",
+    "initrd": [
+      "/assets/flatcar/current/flatcar_production_pxe_image.cpio.gz"
+    ],
+    "args": [
+      "initrd=flatcar_production_pxe_image.cpio.gz",
+      "flatcar.config.url=http://10.1.0.11:8080/ignition?uuid=${uuid}&mac=${mac:hexhyp}&serial=${serial}",
+      "flatcar.first_boot=yes",
+      "flatcar.autologin",
+      "console=tty0"
+    ]
+  },
+  "ignition_id": "flatcar-install.ign"
+}

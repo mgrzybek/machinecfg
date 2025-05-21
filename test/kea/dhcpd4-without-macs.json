@@ -1,0 +1,60 @@
+{
+  "Dhcp4": {
+    "valid-lifetime": 4000,
+    "renew-timer": 1000,
+    "rebind-timer": 2000,
+    "interfaces-config": {
+      "interfaces": [
+        "business"
+      ]
+    },
+    "lease-database": {
+      "type": "memfile",
+      "persist": true,
+      "name": "/var/lib/kea/dhcp4.leases"
+    },
+    "client-classes": [
+      {
+        "name": "XClient_iPXE",
+        "test": "substring(option[77].hex,0,4) == 'iPXE'",
+        "boot-file-name": "http://10.2.0.11:8080/boot.ipxe"
+      },
+      {
+        "name": "HTTPClient",
+        "test": "option[93].hex == 0x0010",
+        "option-data": [
+          {
+            "name": "vendor-class-identifier",
+            "data": "HTTPClient"
+          }
+        ],
+        "boot-file-name": "http://10.2.0.11:8080/assets/ipxe.efi"
+      }
+    ],
+    "subnet4": [
+      {
+        "subnet": "10.2.0.0/24",
+        "pools": [
+          {
+            "pool": "10.2.0.100 - 10.2.0.150",
+            "option-data": [
+              {
+                "name": "routers",
+                "data": "10.2.0.1"
+              },
+              {
+                "name": "ntp-servers",
+                "data": "172.16.11.1,172.16.11.2,172.17.11.3"
+              },
+              {
+                "name": "log-servers",
+                "data": "10.2.0.11"
+              }
+            ]
+          }
+        ],
+        "reservations": []
+      }
+    ]
+  }
+}

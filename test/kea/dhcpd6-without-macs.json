@@ -1,0 +1,51 @@
+{
+  "Dhcp6": {
+    "valid-lifetime": 4000,
+    "renew-timer": 1000,
+    "rebind-timer": 2000,
+    "interfaces-config": {
+      "interfaces": [
+        "business"
+      ]
+    },
+    "lease-database": {
+      "type": "memfile",
+      "persist": true,
+      "name": "/var/lib/kea/dhcp6.leases"
+    },
+    "client-classes": [
+      {
+        "name": "XClient_iPXE",
+        "test": "substring(option[77].hex,0,4) == 'iPXE'",
+        "option-data": [
+          {
+            "name": "bootfile-url",
+            "data": "http://[fe80::d432:5eff:fe96:2]:8080/boot.ipxe"
+          }
+        ]
+      },
+      {
+        "name": "HTTPClient",
+        "test": "option[93].hex == 0x0010",
+        "option-data": [
+          {
+            "name": "bootfile-url",
+            "data": "http://[fe80::d432:5eff:fe96:2]:8080/assets/ipxe.efi"
+          }
+        ]
+      }
+    ],
+    "subnet6": [
+      {
+        "subnet": "2001:db8:1::/48",
+        "pools": [
+          {
+            "pool": "2001:db8:1::/48",
+            "option-data": []
+          }
+        ],
+        "reservations": []
+      }
+    ]
+  }
+}
