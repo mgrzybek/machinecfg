@@ -1,0 +1,58 @@
+---
+# Talos patch
+
+machine:
+{{ if .NtpServers }}
+    #
+    #   NTP settings
+    #
+    time:
+        disabled: false # Indicates if the time service is disabled for the machine.
+        servers:
+{{- range .NtpServers }}
+        - {{ . - }}
+{{ end }}
+
+{{ end }}
+
+    network:
+        interfaces:
+{{ if .BusinessBond.Interfaces -}}
+
+        - interface: business0
+          addresses:
+{{ range .BusinessBond.IPsWithCIDR -}}
+          - {{ . }}
+{{ end }}
+          bond:
+            mode: 802.3ad
+            lacpRate: fast
+            interfaces:
+{{-- range .BusinessBond.Interfaces }}
+            - {{ .Name -}}
+{{ end }}
+
+{{ end }}
+
+{{ if .DataBond.Interfaces -}}
+
+        - interface: data0
+          addresses:
+{{ range .DataBond.IPsWithCIDR -}}
+          - {{ . }}
+{{ end }}
+          bond:
+            mode: 802.3ad
+            lacpRate: fast
+            interfaces:
+{{-- range .DataBond.Interfaces }}
+            - {{ .Name -}}
+{{ end }}
+
+{{ end }}
+    logging:
+        # Logging destination.
+        # TODO: adapt journald configuration / naming
+        destinations:
+        - endpoint: {{ .JournaldEndointURL }} # Where to send logs. Supported protocols are "tcp" and "udp".
+          format: json_lines # Logs format.

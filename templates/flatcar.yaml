@@ -1,0 +1,295 @@
+---
+version: 1.0.0
+variant: flatcar
+
+kernel_arguments:
+  should_not_exist: []
+  should_exist:
+  - fips=1
+  - flatcar.autologin=tty1
+
+passwd:
+  groups:
+  - name: core
+    password_hash: {{ .CoreUser.Password }}
+    ssh_authorized_keys:
+{{- range .CoreUser.AuthorizedKeys }}
+    - {{ . -}}
+{{ end }}
+
+storage:
+  directories: []
+
+  files:
+    #
+    # A journald endpoint is configured if the variable is provided
+    #
+  - path: /etc/systemd/journal-upload.conf
+    overwrite: true
+    mode: 0644
+    contents:
+      inline: |
+        [Upload]
+        URL={{ .JournaldEndointURL }}
+        # ServerKeyFile=/etc/ssl/private/journal-upload.pem
+        # ServerCertificateFile=/etc/ssl/certs/journal-upload.pem
+        # TrustedCertificateFile=/etc/ssl/ca/trusted.pem
+
+    #
+    # NTP services are required
+    #
+  - path: /etc/systemd/timesyncd.conf
+    overwrite: true
+    mode: 0644
+    contents:
+      inline: |
+        [Time]
+        NTP={{range .NtpServers}}{{ . }} {{end}}
+        RootDistanceMaxSec=5
+        PollIntervalMinSec=32
+        PollIntervalMaxSec=2048
+        SaveIntervalSec=60
+
+    #
+    # Use local tools from the homedir, /opt/bin and /opt/sbin
+    #
+  - path: /etc/profile.d/path.sh
+    overwrite: true
+    contents:
+      inline: |
+        if test -d $HOME/bin ; then
+          export PATH=$HOME/bin:$PATH
+        fi
+        if test -d /opt/bin ; then
+          export PATH=/opt/bin:$PATH
+        fi
+        if test -d /opt/sbin ; then
+          export PATH=/opt/sbin:$PATH
+        fi
+
+  - path: /etc/nsswitch.conf
+    mode: 0644
+    overwrite: true
+    contents:
+      inline: |
+        # /etc/nsswitch.conf:
+
+        passwd:      files usrfiles sss systemd
+        shadow:      files usrfiles sss
+        group:       files usrfiles sss systemd
+
+        hosts:       files usrfiles resolve myhostname dns
+        networks:    files usrfiles dns
+
+        services:    files usrfiles
+        protocols:   files usrfiles
+        rpc:         files usrfiles
+
+        ethers:      files
+        netmasks:    files
+        netgroup:    files
+        bootparams:  files
+        automount:   files
+        aliases:     files
+
+    ###########################################################################
+    # TODO: make a loop over the bondings and interfaces and manage DHCP
+    #
+    # Business networking
+    #
+{{ range .BusinessBond.Interfaces }}
+  - path: /etc/systemd/network/00-{{ .Name }}.network
+    overwrite: true
+    contents:
+      inline: |
+        [Match]
+        Name={{ .Name }}
+
+        [Link]
+        MTUBytes={{ .MTU }}
+
+        [Network]
+        Bond=business
+        LLDP=true
+        EmitLLDP=true
+{{ end }}
+
+  - path: /etc/systemd/network/10-business.netdev
+    overwrite: true
+    contents:
+      inline: |
+        [NetDev]
+        Name=business
+        Kind=bond
+
+        [Bond]
+        Mode=802.3ad
+
+  - path: /etc/systemd/network/10-business.network
+    overwrite: true
+    contents:
+      inline: |
+        [Match]
+        Name=business
+
+        [Link]
+        MTUBytes={{ .BusinessBond.MTU }}
+
+        [Network]
+        {{ range .BusinessBond.IPsWithCIDR -}}
+        Address={{ . }}
+        {{ end -}}
+        {{ range .BusinessBond.DNS -}}
+        DNS={{ . }}
+        {{ end -}}
+        Gateway={{ .BusinessBond.Gateway }}
+        DNSSEC=no
+        BindCarrier={{ range .BusinessBond.Interfaces }}{{ . }} {{ end }}
+
+    #
+    # Data networking
+    #
+{{ range .DataBond.Interfaces }}
+  - path: /etc/systemd/network/00-{{ .Name }}.network
+    overwrite: true
+    contents:
+      inline: |
+        [Match]
+        Name={{ .Name }}
+
+        [Link]
+        MTUBytes={{ .MTU }}
+
+        [Network]
+        Bond=data
+        LLDP=true
+        EmitLLDP=true
+{{ end }}
+
+  - path: /etc/systemd/network/10-data.netdev
+    overwrite: true
+    contents:
+      inline: |
+        [NetDev]
+        Name=data
+        Kind=bond
+
+        [Bond]
+        Mode=802.3ad
+
+  - path: /etc/systemd/network/10-data.network
+    overwrite: true
+    contents:
+      inline: |
+        [Match]
+        Name=data
+
+        [Link]
+        MTUBytes={{ .DataBond.MTU }}
+
+        [Network]
+        {{ range .DataBond.IPsWithCIDR -}}
+        Address={{ . }}
+        {{ end -}}
+        {{ range .DataBond.DNS -}}
+        DNS={{ . }}
+        {{ end -}}
+        Gateway={{ .DataBond.Gateway }}
+        DNSSEC=no
+        BindCarrier={{ range .DataBond.Interfaces }}{{ . }} {{ end }}
+
+    #
+    ###########################################################################
+
+    #
+    # DHCP
+    # Disable DHCP
+    #
+  - path: /etc/systemd/network/99-dhcp.network
+    overwrite: true
+    contents:
+      inline: |
+        [Match]
+        Name=*
+
+        [Network]
+        DHCP=no
+
+  - path: /etc/hostname
+    mode: 0420
+    overwrite: true
+    contents:
+      inline: |
+        {{ .Hostname }}
+
+  - path: /etc/ssh/sshd_config
+    mode: 0600
+    overwrite: true
+    contents:
+      inline: |
+        Subsystem sftp internal-sftp
+        UseDNS no
+
+        PermitRootLogin no
+        AllowUsers core
+        AuthenticationMethods publickey
+        ClientAliveInterval 10800
+
+  - path: /etc/modprobe.d/blacklist.conf
+    mode: 0644
+    overwrite: true
+    contents:
+      inline: |
+        blacklist usb-storage
+
+  - path: /etc/system-fips
+    mode: 0644
+
+  - path: /etc/ssl/openssl.cnf.fips
+    overwrite: true
+    mode: 0644
+    contents:
+      inline: |
+        config_diagnostics = 1
+        openssl_conf = openssl_init
+        # it includes the fipsmodule configuration generated
+        # by the "enable-fips.service"
+        .include /etc/ssl/fipsmodule.cnf
+        [openssl_init]
+        providers = provider_sect
+        [provider_sect]
+        fips = fips_sect
+        base = base_sect
+        [base_sect]
+        activate = 1
+
+systemd:
+  units:
+  - name: update-engine.service
+    enabled: false
+
+  - name: systemd-journal-upload.service
+    enabled: true
+
+  - name: sshd.service
+    enabled: true
+
+  - name: user-configdrive.service
+    enabled: false
+
+  - name: enable-fips.service
+    enabled: true
+    contents: |
+      [Unit]
+      Description=Enable OpenSSL FIPS provider
+      ConditionPathExists=!/etc/ssl/fipsmodule.cnf
+      After=system-config.target
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      ExecStart=/usr/bin/openssl fipsinstall \
+        -out /etc/ssl/fipsmodule.cnf \
+        -module /usr/lib64/ossl-modules/fips.so
+      ExecStart=/usr/bin/mv /etc/ssl/openssl.cnf.fips /etc/ssl/openssl.cnf
+      [Install]
+      WantedBy=multi-user.target
