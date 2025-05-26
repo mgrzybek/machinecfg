@@ -46,14 +46,14 @@ netbox-prepare: ## Deploy netbox using docker compose and restore dump
 	test -d $(TMP)/netbox || git clone -b release https://github.com/netbox-community/netbox-docker.git $(TMP)/netbox
 	mkdir -p $(TMP)/netbox/docker-entrypoint-initdb.d
 	cp $(TEST)/docker-compose.override.yml $(TMP)/netbox
-	cp $(TEST)/dump-netbox.sql $(TMP)/netbox/docker-entrypoint-initdb.d
+	cp $(TEST)/netbox.sql $(TMP)/netbox/docker-entrypoint-initdb.d
 
 	@echo "Starting the stack"
 	cd $(TMP)/netbox && docker compose pull
 	cd $(TMP)/netbox && docker compose up -d
 
 	@echo "Creating the API token"
-	awk '/Token for machinecfg/ {print $$5}' $(TEST)/dump-netbox.sql > $(TMP)/token
+	awk '/Token for machinecfg/ {print $$5}' $(TEST)/netbox.sql > $(TMP)/token
 
 .PHONY: test
 test: fmt ${BINARY} ## Run go test
@@ -62,8 +62,6 @@ test: fmt ${BINARY} ## Run go test
 .PHONY: test-online
 test-online: ${BINARY} netbox-prepare ## Run tests against a remote Netbox endpoint
 	@echo TODO
-
-
 
 .PHONY: validate
 validate: ${BINARY} ## Start a validation process of Netbox objects

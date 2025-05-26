@@ -1,0 +1,8 @@
+services:
+  netbox:
+    ports:
+      - "8000:8080"
+  postgres:
+    volumes:
+    - netbox-postgres-data:/var/lib/postgresql/data
+    - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
