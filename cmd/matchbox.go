@@ -13,7 +13,7 @@ import (
 var matchboxCmd = &cobra.Command{
 	Use:   "matchbox",
 	Short: "Interact with Matchbox service",
-	Long: ``,
+	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("matchbox called")
 	},

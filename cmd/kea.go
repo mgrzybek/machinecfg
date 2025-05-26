@@ -14,7 +14,7 @@ var keaCmd = &cobra.Command{
 	Use:   "kea",
 	Short: "Creates a DHCPv4 configuration",
 	Long:  ``,
-	Run:   func(cmd *cobra.Command, args []string) {
+	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("kea called")
 	},
 }
