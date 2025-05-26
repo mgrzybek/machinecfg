@@ -14,7 +14,7 @@ type Directory struct {
 
 // NewDirectory is the constructor of Directory. The given path is given to create the directory at construction time.
 func NewDirectory(logger *slog.Logger, path string) (Directory, error) {
-    err := os.Mkdir(path, os.ModePerm)
+    err := os.MkdirAll(path, os.ModePerm)
 	if err != nil {
         slog.Error("NewDirectory", "message", err)
     }
