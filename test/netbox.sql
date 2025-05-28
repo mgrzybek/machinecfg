@@ -7224,6 +7224,11 @@ COPY public.core_objectchange (id, "time", user_name, request_id, action, change
 85	2025-05-21 11:58:08.528546+00	mathieu	584619a9-6b54-4eb7-9e4a-e7e0b91a0b7e	create	14	5	enp2s0	\N	{"lag": null, "mtu": null, "vrf": null, "wwn": null, "mode": null, "name": "enp2s0", "tags": [], "type": "2.5gbase-t", "vdcs": [], "_name": "9999999999999999enp000002............s00000000", "_path": null, "cable": null, "label": "", "speed": null, "bridge": null, "device": 5, "duplex": null, "module": null, "parent": null, "created": "2025-05-21T11:58:08.517Z", "enabled": true, "rf_role": null, "poe_mode": null, "poe_type": null, "tx_power": null, "cable_end": null, "mgmt_only": false, "qinq_svlan": null, "rf_channel": null, "description": "", "tagged_vlans": [], "custom_fields": {}, "untagged_vlan": null, "wireless_lans": [], "wireless_link": null, "mark_connected": false, "rf_channel_width": null, "primary_mac_address": null, "rf_channel_frequency": null, "vlan_translation_policy": null}	9	12	1
 86	2025-05-21 11:59:43.737189+00	mathieu	2cea84de-8ad2-4ce9-9100-41f378d87c11	create	1	14	192.168.1.100/24	\N	{"vrf": null, "role": null, "tags": [], "status": "active", "tenant": 4, "address": "192.168.1.100/24", "created": "2025-05-21T11:59:43.734Z", "comments": "", "dns_name": "", "nat_inside": null, "description": "", "custom_fields": {}, "assigned_object_id": 14, "assigned_object_type": 9}	84	9	1
 87	2025-05-21 11:59:43.767897+00	mathieu	2cea84de-8ad2-4ce9-9100-41f378d87c11	update	5	\N	worker-02	{"face": "front", "name": "worker-02", "rack": 1, "role": 2, "site": 1, "tags": [], "oob_ip": null, "serial": "", "status": "active", "tenant": null, "airflow": null, "cluster": null, "created": "2025-05-21T11:58:08.477Z", "comments": "", "latitude": null, "location": 1, "platform": null, "position": "1.0", "asset_tag": null, "longitude": null, "description": "", "device_type": 2, "primary_ip4": null, "primary_ip6": null, "vc_position": null, "vc_priority": null, "custom_fields": {}, "config_template": null, "interface_count": 1, "rear_port_count": 0, "virtual_chassis": null, "device_bay_count": 0, "front_port_count": 0, "module_bay_count": 0, "power_port_count": 0, "console_port_count": 0, "local_context_data": null, "power_outlet_count": 0, "inventory_item_count": 0, "console_server_port_count": 0}	{"face": "front", "name": "worker-02", "rack": 1, "role": 2, "site": 1, "tags": [], "oob_ip": null, "serial": "", "status": "active", "tenant": null, "airflow": null, "cluster": null, "created": "2025-05-21T11:58:08.477Z", "comments": "", "latitude": null, "location": 1, "platform": null, "position": "1.0", "asset_tag": null, "longitude": null, "description": "", "device_type": 2, "primary_ip4": 1, "primary_ip6": null, "vc_position": null, "vc_priority": null, "custom_fields": {}, "config_template": null, "interface_count": 1, "rear_port_count": 0, "virtual_chassis": null, "device_bay_count": 0, "front_port_count": 0, "module_bay_count": 0, "power_port_count": 0, "console_port_count": 0, "local_context_data": null, "power_outlet_count": 0, "inventory_item_count": 0, "console_server_port_count": 0}	12	\N	1
+88	2025-05-28 20:52:53.147948+00	mathieu	e4947ccf-0219-4ff9-aad9-964baebacb56	create	2	\N	Datacenter	\N	{"name": "Datacenter", "slug": "datacenter", "tags": [], "weight": 1000, "created": "2025-05-28T20:52:53.136Z", "description": "", "custom_fields": {}}	87	\N	1
+89	2025-05-28 20:53:37.596234+00	mathieu	7b178160-8d5b-4032-9c1b-1f825d70274f	create	2	\N	192.168.2.0/24	\N	{"vrf": null, "role": 2, "tags": [], "vlan": null, "_site": 4, "_depth": 0, "prefix": "192.168.2.0/24", "status": "active", "tenant": null, "_region": 1, "created": "2025-05-28T20:53:37.582Z", "is_pool": false, "comments": "", "scope_id": 4, "_children": 0, "_location": null, "scope_type": 6, "_site_group": 1, "description": "", "custom_fields": {}, "mark_utilized": false}	85	\N	1
+90	2025-05-28 20:54:50.712001+00	mathieu	10980fd6-f6c4-49a7-87c5-9451be1afcc1	create	2	12	192.168.2.19/24	\N	{"vrf": null, "role": null, "tags": [], "status": "active", "tenant": null, "address": "192.168.2.19/24", "created": "2025-05-28T20:54:50.702Z", "comments": "", "dns_name": "", "nat_inside": null, "description": "", "custom_fields": {}, "assigned_object_id": 12, "assigned_object_type": 9}	84	9	1
+91	2025-05-28 20:54:50.731433+00	mathieu	10980fd6-f6c4-49a7-87c5-9451be1afcc1	update	4	\N	worker-01	{"face": null, "name": "worker-01", "rack": null, "role": 2, "site": 4, "tags": [], "oob_ip": null, "serial": "", "status": "active", "tenant": null, "airflow": null, "cluster": null, "created": "2025-05-21T09:22:12.370Z", "comments": "", "latitude": null, "location": null, "platform": 1, "position": null, "asset_tag": null, "longitude": null, "description": "", "device_type": 4, "primary_ip4": null, "primary_ip6": null, "vc_position": null, "vc_priority": null, "custom_fields": {}, "config_template": null, "interface_count": 11, "rear_port_count": 0, "virtual_chassis": null, "device_bay_count": 0, "front_port_count": 0, "module_bay_count": 0, "power_port_count": 0, "console_port_count": 0, "local_context_data": null, "power_outlet_count": 0, "inventory_item_count": 0, "console_server_port_count": 0}	{"face": null, "name": "worker-01", "rack": null, "role": 2, "site": 4, "tags": [], "oob_ip": null, "serial": "", "status": "active", "tenant": null, "airflow": null, "cluster": null, "created": "2025-05-21T09:22:12.370Z", "comments": "", "latitude": null, "location": null, "platform": 1, "position": null, "asset_tag": null, "longitude": null, "description": "", "device_type": 4, "primary_ip4": 2, "primary_ip6": null, "vc_position": null, "vc_priority": null, "custom_fields": {}, "config_template": null, "interface_count": 11, "rear_port_count": 0, "virtual_chassis": null, "device_bay_count": 0, "front_port_count": 0, "module_bay_count": 0, "power_port_count": 0, "console_port_count": 0, "local_context_data": null, "power_outlet_count": 0, "inventory_item_count": 0, "console_server_port_count": 0}	12	\N	1
+92	2025-05-28 20:56:16.118978+00	mathieu	f7e45a6e-69ba-47d8-a7e3-e6427fb78ff2	update	12	4	business0	{"lag": null, "mtu": null, "vrf": null, "wwn": null, "mode": null, "name": "business0", "tags": [], "type": "lag", "vdcs": [], "_name": "9999999999999999business000000............", "_path": null, "cable": null, "label": "", "speed": null, "bridge": null, "device": 4, "duplex": null, "module": null, "parent": null, "created": "2025-05-21T09:23:43.159Z", "enabled": true, "rf_role": null, "poe_mode": null, "poe_type": null, "tx_power": null, "cable_end": null, "mgmt_only": false, "qinq_svlan": null, "rf_channel": null, "description": "", "tagged_vlans": [], "custom_fields": {}, "untagged_vlan": null, "wireless_lans": [], "wireless_link": null, "mark_connected": false, "rf_channel_width": null, "primary_mac_address": null, "rf_channel_frequency": null, "vlan_translation_policy": null}	{"lag": null, "mtu": 9000, "vrf": null, "wwn": null, "mode": null, "name": "business0", "tags": [], "type": "lag", "vdcs": [], "_name": "9999999999999999business000000............", "_path": null, "cable": null, "label": "", "speed": null, "bridge": null, "device": 4, "duplex": null, "module": null, "parent": null, "created": "2025-05-21T09:23:43.159Z", "enabled": true, "rf_role": null, "poe_mode": null, "poe_type": null, "tx_power": null, "cable_end": null, "mgmt_only": false, "qinq_svlan": null, "rf_channel": null, "description": "", "tagged_vlans": [], "custom_fields": {}, "untagged_vlan": null, "wireless_lans": [], "wireless_link": null, "mark_connected": false, "rf_channel_width": null, "primary_mac_address": null, "rf_channel_frequency": null, "vlan_translation_policy": null}	9	12	1
 \.
 
 
@@ -7288,8 +7293,8 @@ COPY public.dcim_consoleserverporttemplate (created, last_updated, id, name, lab
 --
 
 COPY public.dcim_device (created, last_updated, custom_field_data, id, local_context_data, name, serial, asset_tag, "position", face, status, vc_position, vc_priority, comments, cluster_id, role_id, device_type_id, location_id, platform_id, primary_ip4_id, primary_ip6_id, rack_id, site_id, tenant_id, virtual_chassis_id, airflow, description, config_template_id, latitude, longitude, oob_ip_id, console_port_count, console_server_port_count, power_port_count, power_outlet_count, interface_count, front_port_count, rear_port_count, device_bay_count, module_bay_count, inventory_item_count) FROM stdin;
-2025-05-21 09:22:12.370148+00	2025-05-21 09:22:12.370163+00	{}	4	\N	worker-01		\N	\N	\N	active	\N	\N		\N	2	4	\N	1	\N	\N	\N	4	\N	\N	\N		\N	\N	\N	\N	0	0	0	0	11	0	0	0	0	0
 2025-05-21 11:58:08.477066+00	2025-05-21 11:59:43.763533+00	{}	5	\N	worker-02		\N	1.0	front	active	\N	\N		\N	2	2	1	\N	1	\N	1	1	\N	\N	\N		\N	\N	\N	\N	0	0	0	0	1	0	0	0	0	0
+2025-05-21 09:22:12.370148+00	2025-05-28 20:54:50.725943+00	{}	4	\N	worker-01		\N	\N	\N	active	\N	\N		\N	2	4	\N	1	2	\N	\N	4	\N	\N	\N		\N	\N	\N	\N	0	0	0	0	11	0	0	0	0	0
 \.
 
 
@@ -7358,13 +7363,13 @@ COPY public.dcim_interface (created, last_updated, custom_field_data, id, name, 
 2025-05-21 09:22:12.4097+00	2025-05-21 09:22:12.409703+00	{}	5	enp2s1			f	t	\N	\N	9999999999999999enp000002............s00000001	1000base-t	f	\N	\N	4	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
 2025-05-21 09:22:12.409733+00	2025-05-21 09:22:12.409736+00	{}	6	enp2s2			f	t	\N	\N	9999999999999999enp000002............s00000002	1000base-t	f	\N	\N	4	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
 2025-05-21 09:22:12.409761+00	2025-05-21 09:22:12.409763+00	{}	7	enp2s3			f	t	\N	\N	9999999999999999enp000002............s00000003	1000base-t	f	\N	\N	4	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
-2025-05-21 09:23:43.159868+00	2025-05-21 09:23:43.159889+00	{}	12	business0			f	t	\N	\N	9999999999999999business000000............	lag	f	\N	\N	4	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
 2025-05-21 09:22:12.409787+00	2025-05-21 09:23:59.080611+00	{}	8	enp3s0			f	t	\N	\N	9999999999999999enp000003............s00000000	25gbase-x-sfp28	f	\N	\N	4	12	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
 2025-05-21 09:22:12.409838+00	2025-05-21 09:24:08.359386+00	{}	10	enp4s0			f	t	\N	\N	9999999999999999enp000004............s00000000	25gbase-x-sfp28	f	\N	\N	4	12	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
 2025-05-21 09:24:38.278569+00	2025-05-21 09:24:38.278589+00	{}	13	data0			f	t	\N	\N	9999999999999999data000000............	lag	f	\N	\N	4	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
 2025-05-21 09:22:12.409814+00	2025-05-21 09:24:46.828788+00	{}	9	enp3s1			f	t	\N	\N	9999999999999999enp000003............s00000001	25gbase-x-sfp28	f	\N	\N	4	13	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
 2025-05-21 09:22:12.409865+00	2025-05-21 09:24:53.433785+00	{}	11	enp4s1			f	t	\N	\N	9999999999999999enp000004............s00000001	25gbase-x-sfp28	f	\N	\N	4	13	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
 2025-05-21 11:58:08.517039+00	2025-05-21 11:58:50.412148+00	{}	14	enp2s0			f	t	\N	\N	9999999999999999enp000002............s00000000	2.5gbase-t	f	\N	\N	5	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
+2025-05-21 09:23:43.159868+00	2025-05-28 20:56:16.11384+00	{}	12	business0			f	t	9000	\N	9999999999999999business000000............	lag	f	\N	\N	4	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
 \.
 
 
@@ -8525,6 +8530,7 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 
 COPY public.django_session (session_key, session_data, expire_date) FROM stdin;
 5g0qpjgmw8wb4bt4qmj94hh8arbga6gb	.eJxVjEsKwjAQQO-StZRkOunHpReoNygzkymNYgpNCoJ4d1twodv3Hu9lRtrKPG5Z1zEGczbOnH4Zk9w1HSJp4eVZHUpTiUIlLqka-KZSrro-Ys47uHz7v8lMed4PVlgBEZkw9A2Dc9AAUpiceHS2BduxV6o7aBnkSHuPXfBN66WeiMz7AynVOak:1uHey6:1d0Am_S8eFH7lqPB3eFVGznrvXBx-Cj9f7fttKwf7a4	2025-06-04 08:38:30.472361+00
+9jkrzd6n1uudxa9bd201roa0l85rd5zj	.eJxVjEsKwjAQQO-StZRkOunHpReoNygzkymNYgpNCoJ4d1twodv3Hu9lRtrKPG5Z1zEGczbOnH4Zk9w1HSJp4eVZHUpTiUIlLqka-KZSrro-Ys47uHz7v8lMed4PVlgBEZkw9A2Dc9AAUpiceHS2BduxV6o7aBnkSHuPXfBN66WeiMz7AynVOak:1uKHMV:GJBpgi34gWZUuPKEwOIJiSfQCYDgUV7l1zZc_hXF1wc	2025-06-11 14:02:31.888562+00
 \.
 
 
@@ -8594,13 +8600,11 @@ d7841677-5f9e-432b-9382-512c7e80aa45	2025-05-21 09:03:41.340437+00	3	slug	str	pe
 d52076bd-102d-443d-8b73-e8af31651bf5	2025-05-21 09:16:54.103934+00	4	model	str	SR 655	100	51
 6a85701b-4510-4543-bee2-3580842fc2ff	2025-05-21 09:21:04.815995+00	1	name	str	GMKTec	100	57
 237bee6a-5d54-4901-91a1-550b1b249263	2025-05-21 09:21:04.816016+00	1	slug	str	gmktec	110	57
-8facd2e0-0685-41e1-9498-57b63f4c8540	2025-05-21 09:22:12.394253+00	4	name	str	worker-01	100	12
 89bcbe32-cc23-43bb-b076-f70cc9f54c54	2025-05-21 09:22:12.439659+00	3	name	str	bmc0	100	9
 7796f372-ee99-4a7f-b8aa-107ea421edb8	2025-05-21 09:22:12.463628+00	4	name	str	enp2s0	100	9
 ca9dc8a7-82b8-49a1-b8cf-1170403da826	2025-05-21 09:22:12.485264+00	5	name	str	enp2s1	100	9
 7951b381-f264-49fa-a8a1-7ab56521fb9c	2025-05-21 09:22:12.503992+00	6	name	str	enp2s2	100	9
 ce1f8f09-3cd7-42a0-a7b4-50814843b2a5	2025-05-21 09:22:12.523323+00	7	name	str	enp2s3	100	9
-6bcda5e4-960d-4cc9-8601-aea07b3ccb58	2025-05-21 09:23:43.371356+00	12	name	str	business0	100	9
 1413391f-1c1a-413a-b19c-a7b886870fd8	2025-05-21 09:23:59.107836+00	8	name	str	enp3s0	100	9
 42182b9f-cd79-40cd-8abd-6d176847fe9e	2025-05-21 09:24:08.389472+00	10	name	str	enp4s0	100	9
 4cb0d421-8cf9-4a57-b285-751b782f447b	2025-05-21 09:24:38.313474+00	13	name	str	data0	100	9
@@ -8630,6 +8634,13 @@ ff878da7-7d24-4fe5-bfdf-48238900af9d	2025-05-21 09:43:45.416477+00	1	prefix	cidr
 d4d47961-5e5e-4af7-b89b-9bb07e5ef82c	2025-05-21 11:58:50.446734+00	14	name	str	enp2s0	100	9
 c238eaa1-06a8-41ac-bec7-3baa2ff464b0	2025-05-21 11:59:43.752779+00	1	address	inet	192.168.1.100/24	100	84
 485fd383-69fd-4611-935c-ef69adc3907e	2025-05-21 11:59:43.786441+00	5	name	str	worker-02	100	12
+b605ecd2-e4fb-41b8-9290-2a05454c14c7	2025-05-28 20:52:53.154236+00	2	name	str	Datacenter	100	87
+6e11e3bb-b0e3-4bb5-ba3e-0136b3097425	2025-05-28 20:52:53.154258+00	2	slug	str	datacenter	110	87
+663ec1cc-f400-4573-a3df-eeb517905def	2025-05-28 20:53:37.606797+00	2	prefix	cidr	192.168.2.0/24	110	85
+6deaa911-58a8-405d-b737-8565218a2cee	2025-05-28 20:54:50.72102+00	2	address	inet	192.168.2.19/24	100	84
+337c3e3d-e931-4d50-82e1-7d107a552676	2025-05-28 20:54:50.747836+00	4	name	str	worker-01	100	12
+c503df6c-5a8d-4d7a-8df7-62c8e4c656c8	2025-05-28 20:56:16.135587+00	12	name	str	business0	100	9
+f78b0f52-0674-4376-b86c-830fc9bc3ced	2025-05-28 20:56:16.13561+00	12	mtu	int	9000	2000	9
 \.
 
 
@@ -8798,6 +8809,7 @@ COPY public.extras_customlink_object_types (id, customlink_id, objecttype_id) FR
 --
 
 COPY public.extras_dashboard (id, layout, config, user_id) FROM stdin;
+1	[{"h": 5, "w": 4, "x": null, "y": null, "id": "680bee74-2378-460f-81d2-98df59b5d0bc"}, {"h": 2, "w": 4, "x": null, "y": null, "id": "3d15b5e5-0b51-47c6-a6bd-3e1201eb2b2f"}, {"h": 2, "w": 4, "x": null, "y": null, "id": "9386fa4a-bcc2-4a9a-a81a-52f815463c19"}, {"h": 3, "w": 4, "x": null, "y": null, "id": "a40a1b4d-fcdd-42f2-b65d-2eedd6c6238f"}, {"h": 4, "w": 4, "x": null, "y": null, "id": "ef586bd6-6213-44ba-a368-c3426ca8487b"}, {"h": 3, "w": 4, "x": null, "y": null, "id": "343d6c49-59aa-49a3-875f-26a54979b7b8"}, {"h": 3, "w": 4, "x": null, "y": null, "id": "ea53f9a2-8bcd-4af5-a9ad-0bbff16afb70"}, {"h": 2, "w": 4, "x": null, "y": null, "id": "260819f3-7d0f-4e36-bf60-b7816b2fbb88"}, {"h": 5, "w": 12, "x": null, "y": null, "id": "b3f20d8a-a226-44b5-8835-0b7ec5c57761"}]	{"260819f3-7d0f-4e36-bf60-b7816b2fbb88": {"class": "extras.ObjectCountsWidget", "color": null, "title": "Virtualization", "config": {"models": ["virtualization.cluster", "virtualization.virtualmachine"]}}, "343d6c49-59aa-49a3-875f-26a54979b7b8": {"class": "extras.ObjectCountsWidget", "color": null, "title": "Circuits", "config": {"models": ["circuits.provider", "circuits.circuit", "circuits.providernetwork", "circuits.provideraccount"]}}, "3d15b5e5-0b51-47c6-a6bd-3e1201eb2b2f": {"class": "extras.ObjectCountsWidget", "color": null, "title": "Organization", "config": {"models": ["dcim.site", "tenancy.tenant", "tenancy.contact"]}}, "680bee74-2378-460f-81d2-98df59b5d0bc": {"class": "extras.BookmarksWidget", "color": "orange", "title": "Bookmarks", "config": {}}, "9386fa4a-bcc2-4a9a-a81a-52f815463c19": {"class": "extras.NoteWidget", "color": "green", "title": "Welcome!", "config": {"content": "This is your personal dashboard. Feel free to customize it by rearranging, resizing, or removing widgets. You can also add new widgets using the \\"add widget\\" button below. Any changes affect only _your_ dashboard, so feel free to experiment!"}}, "a40a1b4d-fcdd-42f2-b65d-2eedd6c6238f": {"class": "extras.ObjectCountsWidget", "color": null, "title": "IPAM", "config": {"models": ["ipam.vrf", "ipam.aggregate", "ipam.prefix", "ipam.iprange", "ipam.ipaddress", "ipam.vlan"]}}, "b3f20d8a-a226-44b5-8835-0b7ec5c57761": {"class": "extras.ObjectListWidget", "color": "blue", "title": "Change Log", "config": {"model": "core.objectchange", "page_size": 25}}, "ea53f9a2-8bcd-4af5-a9ad-0bbff16afb70": {"class": "extras.ObjectCountsWidget", "color": null, "title": "DCIM", "config": {"models": ["dcim.site", "dcim.rack", "dcim.devicetype", "dcim.device", "dcim.cable"]}}, "ef586bd6-6213-44ba-a368-c3426ca8487b": {"class": "extras.RSSFeedWidget", "color": null, "title": "NetBox News", "config": {"feed_url": "https://api.netbox.oss.netboxlabs.com/v1/newsfeed/", "max_entries": 10, "cache_timeout": 14400, "requires_internet": true}}}	1
 \.
 
 
@@ -9006,6 +9018,7 @@ COPY public.ipam_fhrpgroupassignment (created, last_updated, id, interface_id, p
 
 COPY public.ipam_ipaddress (created, last_updated, custom_field_data, id, address, status, role, assigned_object_id, dns_name, description, assigned_object_type_id, nat_inside_id, tenant_id, vrf_id, comments) FROM stdin;
 2025-05-21 11:59:43.734397+00	2025-05-21 11:59:43.734415+00	{}	1	192.168.1.100/24	active	\N	14			9	\N	4	\N
+2025-05-28 20:54:50.702878+00	2025-05-28 20:54:50.702891+00	{}	2	192.168.2.19/24	active	\N	12			9	\N	\N	\N
 \.
 
 
@@ -9023,6 +9036,7 @@ COPY public.ipam_iprange (created, last_updated, custom_field_data, id, start_ad
 
 COPY public.ipam_prefix (created, last_updated, custom_field_data, id, prefix, status, is_pool, description, role_id, tenant_id, vlan_id, vrf_id, _children, _depth, mark_utilized, comments, scope_id, scope_type_id, _location_id, _region_id, _site_id, _site_group_id) FROM stdin;
 2025-05-21 09:41:55.828436+00	2025-05-21 09:43:45.403389+00	{}	1	192.168.1.0/24	active	t		1	\N	\N	\N	0	0	f		\N	\N	\N	\N	\N	\N
+2025-05-28 20:53:37.582928+00	2025-05-28 20:53:37.582937+00	{}	2	192.168.2.0/24	active	f		2	\N	\N	\N	0	0	f		4	6	\N	1	4	1
 \.
 
 
@@ -9040,6 +9054,7 @@ COPY public.ipam_rir (created, last_updated, custom_field_data, id, name, slug, 
 
 COPY public.ipam_role (created, last_updated, custom_field_data, id, name, slug, weight, description) FROM stdin;
 2025-05-21 09:43:43.005786+00	2025-05-21 09:43:43.005805+00	{}	1	Home network	home-network	1000
+2025-05-28 20:52:53.136957+00	2025-05-28 20:52:53.136967+00	{}	2	Datacenter	datacenter	1000
 \.
 
 
@@ -9297,7 +9312,7 @@ COPY public.users_objectpermission_object_types (id, objectpermission_id, object
 --
 
 COPY public.users_token (id, created, expires, key, write_enabled, description, user_id, allowed_ips, last_used) FROM stdin;
-1	2025-05-21 09:51:17.075489+00	\N	63473a41f36038ea94f84e8a62962195f362a5ca	f	Token for machinecfg	1	{}	\N
+1	2025-05-21 09:51:17.075489+00	\N	63473a41f36038ea94f84e8a62962195f362a5ca	f	Token for machinecfg	1	{}	2025-05-28 21:31:43.934351+00
 \.
 
 
@@ -9306,7 +9321,7 @@ COPY public.users_token (id, created, expires, key, write_enabled, description, 
 --
 
 COPY public.users_user (id, password, last_login, is_superuser, username, first_name, last_name, email, is_staff, is_active, date_joined) FROM stdin;
-1	pbkdf2_sha256$1000000$Kv0ZqwvqLYiJCME6TIqtif$Ng0C3JRBc80jbMzT+6WvGCB/4hRIjbRNlH/YRNk10ds=	2025-05-21 08:38:30.468484+00	t	mathieu			mathieu@localhost	t	t	2025-05-21 08:38:24.423492+00
+1	pbkdf2_sha256$1000000$Kv0ZqwvqLYiJCME6TIqtif$Ng0C3JRBc80jbMzT+6WvGCB/4hRIjbRNlH/YRNk10ds=	2025-05-28 14:02:31.884168+00	t	mathieu			mathieu@localhost	t	t	2025-05-21 08:38:24.423492+00
 \.
 
 
@@ -9679,7 +9694,7 @@ SELECT pg_catalog.setval('public.core_managedfile_id_seq', 1, false);
 -- Name: core_objectchange_id_seq; Type: SEQUENCE SET; Schema: public; Owner: netbox
 --
 
-SELECT pg_catalog.setval('public.core_objectchange_id_seq', 87, true);
+SELECT pg_catalog.setval('public.core_objectchange_id_seq', 92, true);
 
 
 --
@@ -10197,7 +10212,7 @@ SELECT pg_catalog.setval('public.extras_customlink_object_types_id_seq', 1, fals
 -- Name: extras_dashboard_id_seq; Type: SEQUENCE SET; Schema: public; Owner: netbox
 --
 
-SELECT pg_catalog.setval('public.extras_dashboard_id_seq', 1, false);
+SELECT pg_catalog.setval('public.extras_dashboard_id_seq', 1, true);
 
 
 --
@@ -10372,7 +10387,7 @@ SELECT pg_catalog.setval('public.ipam_fhrpgroupassignment_id_seq', 1, false);
 -- Name: ipam_ipaddress_id_seq; Type: SEQUENCE SET; Schema: public; Owner: netbox
 --
 
-SELECT pg_catalog.setval('public.ipam_ipaddress_id_seq', 1, true);
+SELECT pg_catalog.setval('public.ipam_ipaddress_id_seq', 2, true);
 
 
 --
@@ -10386,7 +10401,7 @@ SELECT pg_catalog.setval('public.ipam_iprange_id_seq', 1, false);
 -- Name: ipam_prefix_id_seq; Type: SEQUENCE SET; Schema: public; Owner: netbox
 --
 
-SELECT pg_catalog.setval('public.ipam_prefix_id_seq', 1, true);
+SELECT pg_catalog.setval('public.ipam_prefix_id_seq', 2, true);
 
 
 --
@@ -10400,7 +10415,7 @@ SELECT pg_catalog.setval('public.ipam_rir_id_seq', 1, false);
 -- Name: ipam_role_id_seq; Type: SEQUENCE SET; Schema: public; Owner: netbox
 --
 
-SELECT pg_catalog.setval('public.ipam_role_id_seq', 1, true);
+SELECT pg_catalog.setval('public.ipam_role_id_seq', 2, true);
 
 
 --
