@@ -4,9 +4,15 @@ Copyright © 2025 Mathieu GRZYBEK
 package cmd
 
 import (
-	"fmt"
+	"log/slog"
+	"os"
 
 	"github.com/spf13/cobra"
+
+	"machinecfg/internal/core"
+	"machinecfg/internal/core/domain"
+	"machinecfg/internal/input"
+	"machinecfg/internal/output"
 )
 
 // butaneCmd represents the butane command
@@ -24,11 +30,50 @@ The available profiles are:
 * live: the machine runs the final configuration.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("butane called")
+		configureLogger(cmd)
+
+		cmdRootArgs := processRootArgs(cmd)
+		cmdButaneARgs := processButaneArgs(cmd)
+
+		cmdb, err := input.NewNetbox(cmdRootArgs)
+
+		if err != nil {
+			slog.Error(err.Error())
+			os.Exit(1)
+		}
+
+		machines := cmdb.GetMachines()
+
+		output, err := output.NewDirectory(cmdRootArgs.OutputDirectory)
+		if err != nil {
+			slog.Error(err.Error())
+			os.Exit(1)
+		}
+
+		engine := core.NewEngine(cmdRootArgs, cmdButaneARgs.Template, output)
+		engine.PrintYAMLTemplates(machines)
+
 	},
 }
 
 func init() {
 	butaneCmd.Flags().String("profile", "p", "Pre-configured profile to apply ’install’, ’live’")
+	butaneCmd.Flags().String("template", "", "Go-Template file to use to generate YAML")
 	rootCmd.AddCommand(butaneCmd)
+}
+
+func processButaneArgs(cmd *cobra.Command) *domain.ButaneArgs {
+	profile, _ := cmd.Flags().GetString("profile")
+	template, _ := cmd.Flags().GetString("template")
+
+	stat, err := os.Stat(template)
+	if os.IsNotExist(err) || stat.Size() == 0 {
+		slog.Error("option template must exist")
+		os.Exit(1)
+	}
+
+	return &domain.ButaneArgs{
+		Profile:  profile,
+		Template: template,
+	}
 }

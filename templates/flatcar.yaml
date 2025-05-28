@@ -21,6 +21,7 @@ storage:
   directories: []
 
   files:
+{{ if len .JournaldEndpointURL gt 0 }}
     #
     # A journald endpoint is configured if the variable is provided
     #
@@ -34,7 +35,9 @@ storage:
         # ServerKeyFile=/etc/ssl/private/journal-upload.pem
         # ServerCertificateFile=/etc/ssl/certs/journal-upload.pem
         # TrustedCertificateFile=/etc/ssl/ca/trusted.pem
+{{ end }}
 
+{{ if len .NtpServers gt 0 }}
     #
     # NTP services are required
     #
@@ -49,6 +52,7 @@ storage:
         PollIntervalMinSec=32
         PollIntervalMaxSec=2048
         SaveIntervalSec=60
+{{ end }}
 
     #
     # Use local tools from the homedir, /opt/bin and /opt/sbin
@@ -93,11 +97,8 @@ storage:
         aliases:     files
 
     ###########################################################################
-    # TODO: make a loop over the bondings and interfaces and manage DHCP
-    #
-    # Business networking
-    #
-{{ range .BusinessBond.Interfaces }}
+    # Bondings
+{{ range .Bondings }}
   - path: /etc/systemd/network/00-{{ .Name }}.network
     overwrite: true
     contents:
@@ -109,98 +110,53 @@ storage:
         MTUBytes={{ .MTU }}
 
         [Network]
-        Bond=business
+        Bond={{ range .Interfaces }}{{.Name}} {{ end }}
         LLDP=true
         EmitLLDP=true
-{{ end }}
 
-  - path: /etc/systemd/network/10-business.netdev
+  - path: /etc/systemd/network/10-{{ .Name }}.netdev
     overwrite: true
     contents:
       inline: |
         [NetDev]
-        Name=business
-        Kind=bond
-
-        [Bond]
-        Mode=802.3ad
-
-  - path: /etc/systemd/network/10-business.network
-    overwrite: true
-    contents:
-      inline: |
-        [Match]
-        Name=business
-
-        [Link]
-        MTUBytes={{ .BusinessBond.MTU }}
-
-        [Network]
-        {{ range .BusinessBond.IPsWithCIDR -}}
-        Address={{ . }}
-        {{ end -}}
-        {{ range .BusinessBond.DNS -}}
-        DNS={{ . }}
-        {{ end -}}
-        Gateway={{ .BusinessBond.Gateway }}
-        DNSSEC=no
-        BindCarrier={{ range .BusinessBond.Interfaces }}{{ . }} {{ end }}
-
-    #
-    # Data networking
-    #
-{{ range .DataBond.Interfaces }}
-  - path: /etc/systemd/network/00-{{ .Name }}.network
-    overwrite: true
-    contents:
-      inline: |
-        [Match]
         Name={{ .Name }}
-
-        [Link]
-        MTUBytes={{ .MTU }}
-
-        [Network]
-        Bond=data
-        LLDP=true
-        EmitLLDP=true
-{{ end }}
-
-  - path: /etc/systemd/network/10-data.netdev
-    overwrite: true
-    contents:
-      inline: |
-        [NetDev]
-        Name=data
         Kind=bond
 
         [Bond]
         Mode=802.3ad
+{{ end }}
 
-  - path: /etc/systemd/network/10-data.network
-    overwrite: true
-    contents:
-      inline: |
-        [Match]
-        Name=data
-
-        [Link]
-        MTUBytes={{ .DataBond.MTU }}
-
-        [Network]
-        {{ range .DataBond.IPsWithCIDR -}}
-        Address={{ . }}
-        {{ end -}}
-        {{ range .DataBond.DNS -}}
-        DNS={{ . }}
-        {{ end -}}
-        Gateway={{ .DataBond.Gateway }}
-        DNSSEC=no
-        BindCarrier={{ range .DataBond.Interfaces }}{{ . }} {{ end }}
-
-    #
     ###########################################################################
+    # Interfaces out of bondings
+{{ range .PhysicalInterfaces }}
+{{ if len .LAGName eq 0 }}
+  - path: /etc/systemd/network/00-{{ .Name }}.network
+    overwrite: true
+    contents:
+      inline: |
+        [Match]
+        Name={{ .Name }}
+        MACAddress={{ .MACAddress }}
 
+        [Link]
+        MTUBytes={{ .MTU }}
+
+        [Network]
+{{ if len .IPsWithCIDR gt 0 }}
+{{ range .IPsWithCIDR }}
+        Address={{ . }}
+{{ end }}
+{{ range .Gateways }}
+        Gateway={{ . }}
+{{ end }}
+{{ else }}
+        DHCP=ipv4 ou ipv6 (si non indiqué, vaut false, true = ipv4 et ipv6)
+{{ end }}
+
+{{ end }}
+{{ end }}
+
+    ###########################################################################
     #
     # DHCP
     # Disable DHCP

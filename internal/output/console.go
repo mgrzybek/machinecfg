@@ -12,8 +12,8 @@ func NewConsole() Console {
 }
 
 // GetFileDescriptor provides the file descriptor used to write results
-func (c Console) GetFileDescriptor(fileName *string) *os.File {
-	return os.Stdout
+func (c Console) GetFileDescriptor(fileName *string) (*os.File, error) {
+	return os.Stdout, nil
 }
 
 // Close provides the required method to comply to the meta-object but does nothing

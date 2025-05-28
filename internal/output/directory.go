@@ -7,34 +7,35 @@ import (
 )
 
 type Directory struct {
-	path   string
-	logger *slog.Logger
+	path string
 }
 
 // NewDirectory is the constructor of Directory. The given path is given to create the directory at construction time.
-func NewDirectory(logger *slog.Logger, path string) (Directory, error) {
+func NewDirectory(path string) (Directory, error) {
 	err := os.MkdirAll(path, os.ModePerm)
 	if err != nil {
 		slog.Error("NewDirectory", "message", err)
 	}
 
 	return Directory{
-		logger: logger,
-		path:   path,
+		path: path,
 	}, err
 }
 
 // GetFileDescriptor provides the file descriptor used to write results as a file inside the directory's path.
-func (d Directory) GetFileDescriptor(fileName *string) (result *os.File) {
+func (d Directory) GetFileDescriptor(fileName *string) (result *os.File, err error) {
 	file := fmt.Sprintf("%s/%s", d.path, *fileName)
-	result, _ = os.Create(file)
-	d.logger.Info("GetFileDescriptor", "file", result.Name())
+	result, err = os.Create(file)
+	if err != nil {
+		slog.Error(err.Error())
+	}
+	slog.Info("GetFileDescriptor", "file", result.Name())
 
-	return result
+	return result, err
 }
 
 // Close closes the given file descriptor.
 func (d Directory) Close(fileDescriptor *os.File) error {
-	d.logger.Debug("Close", "file", fileDescriptor.Name())
+	slog.Debug("Close", "file", fileDescriptor.Name())
 	return fileDescriptor.Close()
 }

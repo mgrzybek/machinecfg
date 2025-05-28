@@ -22,13 +22,18 @@ func ValidateMachineInfo(mc *domain.MachineInfo) (result bool) {
 	if !interfacesInBondingsHaveSameMTU(mc) {
 		result = false
 	}
-
 	if !vlanIDsAreValid(mc) {
 		result = false
 	}
-
 	if !bootstrapURLisURL(mc.BootstrapURL) {
 		result = false
+	}
+	if !loggingEndpointsAreURL(mc.LoggingEndpoints) {
+		result = false
+	}
+
+	if !result {
+		slog.Warn("ValidateMachineInfo", "message", "Validation failed", "device", mc.Hostname)
 	}
 
 	return result
@@ -145,15 +150,38 @@ func vlanIDIsValid(vif *domain.VLANInterface) (result bool) {
 func bootstrapURLisURL(value string) (result bool) {
 	result = true
 
-	u, err := url.Parse(value)
-	if err != nil {
-		result = false
-		slog.Warn("bootstrapURLisURL", "message", "This is not a valid URL", "value", value)
+	if value != "" {
+		u, err := url.Parse(value)
+		if err != nil {
+			result = false
+			slog.Warn("bootstrapURLisURL", "message", "This is not a valid URL", "value", value)
+		}
+
+		if u.Scheme != "https" && u.Scheme != "http" {
+			result = false
+			slog.Warn("bootstrapURLisURL", "message", "This is not a valid scheme", "value", u.Scheme)
+		}
 	}
 
-	if u.Scheme != "https" && u.Scheme != "http" {
-		result = false
-		slog.Warn("bootstrapURLisURL", "message", "This is not a valid scheme", "value", u.Scheme)
+	return result
+}
+
+func loggingEndpointsAreURL(endpoints []string) (result bool) {
+	result = true
+
+	for _, value := range endpoints {
+		if value != "" {
+			u, err := url.Parse(value)
+			if err != nil {
+				result = false
+				slog.Warn("bootstrapURLisURL", "message", "This is not a valid URL", "value", value)
+			}
+
+			if u.Scheme != "tcp" && u.Scheme != "udp" {
+				result = false
+				slog.Warn("bootstrapURLisURL", "message", "This is not a valid scheme", "value", u.Scheme)
+			}
+		}
 	}
 
 	return result

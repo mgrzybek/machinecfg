@@ -18,6 +18,10 @@ func createCorrectMachineInfo() (result domain.MachineInfo) {
 	result.Hostname = "myhost"
 	result.DNS = []string{"1.1.1.1", "2.2.2.2"}
 	result.BootstrapURL = "https://my-bootstrap.local:8443"
+	result.LoggingEndpoints = []string{
+		"udp://1.2.3.4:443",
+		"tcp://4.3.2.1:443",
+	}
 
 	correctInterface1 := domain.PhysicalInterface{
 		MACAddress: "00:11:22:33:44",
@@ -131,4 +135,13 @@ func TestValidateMachineInfoBootstrapURL(t *testing.T) {
 	result = ValidateMachineInfo(&brokenBootstrapURL)
 	expected = false
 	assert.Equal(t, expected, result, "The bootstrap URL is broken, the validation should have failed")
+}
+
+func TestValidateMachineInfoLoggingEndpoints(t *testing.T) {
+	brokenLoggingEndpoints := createCorrectMachineInfo()
+	brokenLoggingEndpoints.LoggingEndpoints[0] = "toto://2.8.3.3"
+	brokenLoggingEndpoints.LoggingEndpoints[0] = "too:/2.8.3.3"
+	result = ValidateMachineInfo(&brokenLoggingEndpoints)
+	expected = false
+	assert.Equal(t, expected, result, "The Logging Endpoint is broken, the validation should have failed")
 }

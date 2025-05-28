@@ -1,58 +1,46 @@
 ---
-# Talos patch
+# Talos Machine Configuration patch for {{ .Hostname }}
 
 machine:
-{{ if .NtpServers }}
+{{ if .NTPServers }}
     #
     #   NTP settings
     #
     time:
         disabled: false # Indicates if the time service is disabled for the machine.
         servers:
-{{- range .NtpServers }}
-        - {{ . - }}
-{{ end }}
-
-{{ end }}
-
+{{- range .NTPServers }}
+        - {{ . }}
+{{- end }}
+{{- end }}
     network:
         interfaces:
-{{ if .BusinessBond.Interfaces -}}
-
-        - interface: business0
+{{- range .Bondings }}
+        - interface: {{ .Name }}
           addresses:
-{{ range .BusinessBond.IPsWithCIDR -}}
+{{- range .IPsWithCIDR }}
           - {{ . }}
-{{ end }}
+{{- end }}
           bond:
             mode: 802.3ad
             lacpRate: fast
             interfaces:
-{{-- range .BusinessBond.Interfaces }}
+{{- range .Interfaces }}
             - {{ .Name -}}
 {{ end }}
-
 {{ end }}
-
-{{ if .DataBond.Interfaces -}}
-
-        - interface: data0
+{{- range .Interfaces }}
+{{ if .IPsWithCIDR }}
+        - interface: {{ .Name }}
           addresses:
-{{ range .DataBond.IPsWithCIDR -}}
+{{- range .IPsWithCIDR }}
           - {{ . }}
-{{ end }}
-          bond:
-            mode: 802.3ad
-            lacpRate: fast
-            interfaces:
-{{-- range .DataBond.Interfaces }}
-            - {{ .Name -}}
-{{ end }}
-
-{{ end }}
+{{- end }}
+{{- end }}
+{{- end }}
     logging:
-        # Logging destination.
-        # TODO: adapt journald configuration / naming
+{{ range .LoggingEndpoints }}
         destinations:
-        - endpoint: {{ .JournaldEndointURL }} # Where to send logs. Supported protocols are "tcp" and "udp".
+        - endpoint: {{ . }} # Where to send logs. Supported protocols are "tcp" and "udp".
           format: json_lines # Logs format.
+{{- end }}
