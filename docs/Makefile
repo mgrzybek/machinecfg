@@ -15,6 +15,14 @@ architecture.svg: architecture.drawio ## Export the architecture page to SVG
 		--page-index 0 \
 		--output architecture.svg
 
+internals.drawio:	# Hidden target
+
+internals.svg: internals.drawio ## Export the internals page to SVG
+	$(DRAWIO) $(DRAWIO_SVG_OPTS) \
+		--export internals.drawio \
+		--page-index 0 \
+		--output internals.svg
+
 ##############################################################################
 # Help
 
