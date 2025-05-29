@@ -28,12 +28,21 @@ func Execute() {
 }
 
 func init() {
+	// Generic options
 	rootCmd.PersistentFlags().StringP("log-level", "", "", "Log level ’development’ (default) or ’production’")
 	rootCmd.PersistentFlags().StringP("netbox-token", "", "", "Token used to call Netbox API")
 	rootCmd.PersistentFlags().StringP("netbox-endpoint", "", "", "URL of the API")
 	rootCmd.PersistentFlags().StringP("output-directory", "", "", "Where to write the result")
+
+	// Location filters
+	rootCmd.PersistentFlags().StringP("region", "", "", "Region to extract data from")
 	rootCmd.PersistentFlags().StringP("site", "", "", "Site to extract data from")
+	rootCmd.PersistentFlags().StringP("location", "", "", "Location to extract data from")
+	rootCmd.PersistentFlags().StringP("rack", "", "", "Apply a filter on the given rack")
+
+	// Usage filters
 	rootCmd.PersistentFlags().StringP("tenant", "", "", "Tenant to extract data from")
+	rootCmd.PersistentFlags().StringP("role", "", "", "Apply a filter on the given role")
 }
 
 func configureLogger(cmd *cobra.Command) {
@@ -52,10 +61,15 @@ func configureLogger(cmd *cobra.Command) {
 func processRootArgs(cmd *cobra.Command) *domain.ConfigurationArgs {
 	fatalError := false
 	endpoint, _ := cmd.Flags().GetString("netbox-endpoint")
-	outputDirectory, _ := cmd.Flags().GetString("output-directory")
-	site, _ := cmd.Flags().GetString("site")
-	tenant, _ := cmd.Flags().GetString("tenant")
 	token, _ := cmd.Flags().GetString("netbox-token")
+	outputDirectory, _ := cmd.Flags().GetString("output-directory")
+
+	region, _ := cmd.Flags().GetString("region")
+	site, _ := cmd.Flags().GetString("site")
+	location, _ := cmd.Flags().GetString("location")
+	rack, _ := cmd.Flags().GetString("rack")
+	tenant, _ := cmd.Flags().GetString("tenant")
+	role, _ := cmd.Flags().GetString("role")
 
 	if endpoint == "" {
 		slog.Error("endpoint option must be given")
@@ -73,9 +87,13 @@ func processRootArgs(cmd *cobra.Command) *domain.ConfigurationArgs {
 
 	return &domain.ConfigurationArgs{
 		Endpoint:        endpoint,
-		OutputDirectory: outputDirectory,
-		Site:            site,
-		Tenant:          tenant,
 		Token:           token,
+		OutputDirectory: outputDirectory,
+		Region:          region,
+		Site:            site,
+		Location:        location,
+		Rack:            rack,
+		Tenant:          tenant,
+		Role:            role,
 	}
 }

@@ -59,6 +59,7 @@ machine:
         device.netbox.org/role: {{ .Role }}
         device.netbox.org/serial: {{ .Serial }}
 
+        topology.netbox.org/region: {{ .Region }}
         topology.netbox.org/site: {{ .Site }}
         topology.netbox.org/location: {{ .Location }}
         topology.netbox.org/rack: {{ .Rack }}

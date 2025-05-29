@@ -34,8 +34,17 @@ func (nb *Netbox) GetMachines() (result []domain.MachineInfo) {
 
 	var queryStrings []string
 
+	if nb.args.Region != "" {
+		queryStrings = append(queryStrings, fmt.Sprintf("region=%s", nb.args.Region))
+	}
 	if nb.args.Site != "" {
 		queryStrings = append(queryStrings, fmt.Sprintf("site=%s", nb.args.Site))
+	}
+	if nb.args.Location != "" {
+		queryStrings = append(queryStrings, fmt.Sprintf("site=%s", nb.args.Location))
+	}
+	if nb.args.Rack!= "" {
+		queryStrings = append(queryStrings, fmt.Sprintf("site=%s", nb.args.Rack))
 	}
 	if nb.args.Tenant != "" {
 		queryStrings = append(queryStrings, fmt.Sprintf("tenant=%s", nb.args.Tenant))
@@ -96,15 +105,18 @@ func (nb *Netbox) getHTTPRequest(uri string) (result []byte, err error) {
 func (nb *Netbox) transformAPIDevicesToMachineInfo(devices []Device) (result []domain.MachineInfo) {
 	for _, device := range devices {
 		var mc domain.MachineInfo
+
+		mc.Hostname = device.Name
+		mc.Serial = device.Serial
 		//mc.BootstrapURL
 		//mc.DNS
-		mc.Hostname = device.Name
 		//mc.JournaldURL
 		//mc.NTPServers
-		mc.Serial = device.Serial
-		mc.Rack = device.Role.Name
-		mc.Location = device.Location.Slug
+
+		mc.Region = device.Role.Slug
 		mc.Site = device.Site.Slug
+		mc.Location = device.Location.Slug
+		mc.Rack = device.Role.Slug
 		mc.Position = device.Position
 
 		mc.Interfaces, mc.Bondings, _ = nb.getInterfacesOfDevice(device.ID)

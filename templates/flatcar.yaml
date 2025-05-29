@@ -34,6 +34,7 @@ storage:
         role={{ .Role }}
 
         # Topology attributes
+        region={{ .Region }}
         site={{ .Site }}
         location={{ .Location }}
         rack={{ .Rack }}

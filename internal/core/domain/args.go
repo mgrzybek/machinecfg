@@ -1,12 +1,18 @@
 package domain
 
 type ConfigurationArgs struct {
-	Endpoint        string
+	Endpoint string
+	Token    string
+
 	OutputDirectory string
-	Role            string
-	Site            string
-	Tenant          string
-	Token           string
+
+	Region   string
+	Site     string
+	Location string
+	Rack     string
+
+	Tenant string
+	Role   string
 }
 
 type ButaneArgs struct {
