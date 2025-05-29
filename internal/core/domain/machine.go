@@ -2,8 +2,11 @@ package domain
 
 // MachineInfo represents the tags used to create a machine configuration (generic)
 type MachineInfo struct {
-	Hostname         string
-	Serial           string
+	// Hardware
+	Hostname string
+	Serial   string
+
+	// Networking
 	Bondings         []BondingConfiguration
 	Interfaces       []PhysicalInterface
 	BootstrapURL     string
@@ -11,6 +14,15 @@ type MachineInfo struct {
 	LoggingEndpoints []string
 	DNS              []string
 	NTPServers       []string
+
+	// Topology
+	Region   string
+	Site     string
+	Role     string
+	Location string
+	Rack     string
+	Position string
+	Tenant   string
 }
 
 // PhysicalInterface represents a network adapter and its configuration

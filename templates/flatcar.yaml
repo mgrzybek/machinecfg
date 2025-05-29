@@ -21,6 +21,24 @@ storage:
   directories: []
 
   files:
+    #
+    # Provides some topology data and metedata from Netbox
+    #
+  - path: /etc/dcim.conf
+    overwrite: true
+    mode: 0644
+    contents:
+      inline: |
+        # Management attributes
+        tenant={{ .Tenant }}
+        role={{ .Role }}
+
+        # Topology attributes
+        site={{ .Site }}
+        location={{ .Location }}
+        rack={{ .Rack }}
+        position={{ .Position }}
+
 {{ if len .JournaldEndpointURL gt 0 }}
     #
     # A journald endpoint is configured if the variable is provided
