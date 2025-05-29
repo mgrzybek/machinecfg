@@ -21,7 +21,7 @@ type MachineInfo struct {
 	Role     string
 	Location string
 	Rack     string
-	Position string
+	Position float32
 	Tenant   string
 }
 

@@ -102,6 +102,10 @@ func (nb *Netbox) transformAPIDevicesToMachineInfo(devices []Device) (result []d
 		//mc.JournaldURL
 		//mc.NTPServers
 		mc.Serial = device.Serial
+		mc.Rack = device.Role.Name
+		mc.Location = device.Location.Slug
+		mc.Site = device.Site.Slug
+		mc.Position = device.Position
 
 		mc.Interfaces, mc.Bondings, _ = nb.getInterfacesOfDevice(device.ID)
 
@@ -111,7 +115,7 @@ func (nb *Netbox) transformAPIDevicesToMachineInfo(devices []Device) (result []d
 	return result
 }
 
-func (nb *Netbox) getInterfacesOfDevice(id int64) (physicalIFaces []domain.PhysicalInterface, bondings []domain.BondingConfiguration, err error) {
+func (nb *Netbox) getInterfacesOfDevice(id int) (physicalIFaces []domain.PhysicalInterface, bondings []domain.BondingConfiguration, err error) {
 	response, err := nb.callInterfacesListWithDeviceID(id)
 
 	if err == nil {
@@ -173,7 +177,7 @@ func (nb *Netbox) getInterfacesOfDevice(id int64) (physicalIFaces []domain.Physi
 	return physicalIFaces, bondings, err
 }
 
-func (nb *Netbox) callInterfacesListWithDeviceID(id int64) (result APIDeviceInterfaceResponse, err error) {
+func (nb *Netbox) callInterfacesListWithDeviceID(id int) (result APIDeviceInterfaceResponse, err error) {
 	uri := fmt.Sprintf("api/dcim/interfaces/?device_id=%v", id)
 	resultRaw, _ := nb.getHTTPRequest(uri)
 

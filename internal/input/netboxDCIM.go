@@ -98,36 +98,119 @@ type DeviceInterface struct {
 }
 
 type Device struct {
-	ID     int64  `json:"id"`
-	Name   string `json:"name"`
-	Serial string `json:"serial"`
-
-	Cluster struct {
-		Name string `json:"name"`
-	} `json:"cluster"`
-
+	ID         int    `json:"id"`
+	URL        string `json:"url"`
+	DisplayURL string `json:"display_url"`
+	Display    string `json:"display"`
+	Name       string `json:"name"`
+	DeviceType struct {
+		ID           int    `json:"id"`
+		URL          string `json:"url"`
+		Display      string `json:"display"`
+		Manufacturer struct {
+			ID          int    `json:"id"`
+			URL         string `json:"url"`
+			Display     string `json:"display"`
+			Name        string `json:"name"`
+			Slug        string `json:"slug"`
+			Description string `json:"description"`
+		} `json:"manufacturer"`
+		Model       string `json:"model"`
+		Slug        string `json:"slug"`
+		Description string `json:"description"`
+	} `json:"device_type"`
 	Role struct {
-		Name string `json:"name"`
-	} `json:"DeviceRole"`
-
-	Site struct {
-		Slug string `json:"slug"`
-	} `json:"site"`
-
+		ID          int    `json:"id"`
+		URL         string `json:"url"`
+		Display     string `json:"display"`
+		Name        string `json:"name"`
+		Slug        string `json:"slug"`
+		Description string `json:"description"`
+		Depth       int    `json:"_depth"`
+	} `json:"role"`
 	Tenant struct {
-		Slug string `json:"slug"`
+		ID          int    `json:"id"`
+		URL         string `json:"url"`
+		Display     string `json:"display"`
+		Name        string `json:"name"`
+		Slug        string `json:"slug"`
+		Description string `json:"description"`
 	} `json:"tenant"`
-
-	ConfigContext struct {
-		Interfaces struct {
-			All []struct {
-				IP          string `json:"ip"`
-				Mtu         int    `json:"mtu"`
-				Name        string `json:"name"`
-				Prefix      int    `json:"prefix"`
-				Shutdown    bool   `json:"shutdown"`
-				Description string `json:"description"`
-			} `json:"all"`
-		} `json:"interfaces"`
+	Platform struct {
+		ID          int    `json:"id"`
+		URL         string `json:"url"`
+		Display     string `json:"display"`
+		Name        string `json:"name"`
+		Slug        string `json:"slug"`
+		Description string `json:"description"`
+	} `json:"platform"`
+	Serial   string `json:"serial"`
+	AssetTag any    `json:"asset_tag"`
+	Site     struct {
+		ID          int    `json:"id"`
+		URL         string `json:"url"`
+		Display     string `json:"display"`
+		Name        string `json:"name"`
+		Slug        string `json:"slug"`
+		Description string `json:"description"`
+	} `json:"site"`
+	Location struct {
+		ID          int    `json:"id"`
+		URL         string `json:"url"`
+		Display     string `json:"display"`
+		Name        string `json:"name"`
+		Slug        string `json:"slug"`
+		Description string `json:"description"`
+		RackCount   int    `json:"rack_count"`
+		Depth       int    `json:"_depth"`
+	} `json:"location"`
+	Rack struct {
+		ID          int    `json:"id"`
+		URL         string `json:"url"`
+		Display     string `json:"display"`
+		Name        string `json:"name"`
+		Description string `json:"description"`
+	} `json:"rack"`
+	Position float32 `json:"position"`
+	Face     struct {
+		Value string `json:"value"`
+		Label string `json:"label"`
+	} `json:"face"`
+	Latitude     any `json:"latitude"`
+	Longitude    any `json:"longitude"`
+	ParentDevice any `json:"parent_device"`
+	Status       struct {
+		Value string `json:"value"`
+		Label string `json:"label"`
+	} `json:"status"`
+	Airflow        any    `json:"airflow"`
+	PrimaryIP      any    `json:"primary_ip"`
+	PrimaryIP4     any    `json:"primary_ip4"`
+	PrimaryIP6     any    `json:"primary_ip6"`
+	OobIP          any    `json:"oob_ip"`
+	Cluster        any    `json:"cluster"`
+	VirtualChassis any    `json:"virtual_chassis"`
+	VcPosition     any    `json:"vc_position"`
+	VcPriority     any    `json:"vc_priority"`
+	Description    string `json:"description"`
+	Comments       string `json:"comments"`
+	ConfigTemplate any    `json:"config_template"`
+	ConfigContext  struct {
 	} `json:"config_context"`
+	LocalContextData any   `json:"local_context_data"`
+	Tags             []any `json:"tags"`
+	CustomFields     struct {
+	} `json:"custom_fields"`
+	Created                time.Time `json:"created"`
+	LastUpdated            time.Time `json:"last_updated"`
+	ConsolePortCount       int       `json:"console_port_count"`
+	ConsoleServerPortCount int       `json:"console_server_port_count"`
+	PowerPortCount         int       `json:"power_port_count"`
+	PowerOutletCount       int       `json:"power_outlet_count"`
+	InterfaceCount         int       `json:"interface_count"`
+	FrontPortCount         int       `json:"front_port_count"`
+	RearPortCount          int       `json:"rear_port_count"`
+	DeviceBayCount         int       `json:"device_bay_count"`
+	ModuleBayCount         int       `json:"module_bay_count"`
+	InventoryItemCount     int       `json:"inventory_item_count"`
 }
