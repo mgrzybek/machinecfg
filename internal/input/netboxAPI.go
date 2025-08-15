@@ -43,7 +43,7 @@ func (nb *Netbox) GetMachines() (result []domain.MachineInfo) {
 	if nb.args.Location != "" {
 		queryStrings = append(queryStrings, fmt.Sprintf("site=%s", nb.args.Location))
 	}
-	if nb.args.Rack!= "" {
+	if nb.args.Rack != "" {
 		queryStrings = append(queryStrings, fmt.Sprintf("site=%s", nb.args.Rack))
 	}
 	if nb.args.Tenant != "" {
@@ -90,9 +90,9 @@ func (nb *Netbox) getHTTPRequest(uri string) (result []byte, err error) {
 
 		if resp == nil {
 			slog.Error("getHTTPRequest", "message", "cannot connect against Netbox")
+		} else {
+			slog.Debug("getHTTPRequest", "url", url, "result", result, "HTTP code", resp.StatusCode)
 		}
-
-		slog.Debug("getHTTPRequest", "url", url, "result", result, "HTTP code", resp.StatusCode)
 
 		if err != nil {
 			slog.Error("getHTTPRequest", "message", err.Error())
