@@ -26,4 +26,7 @@ go.work.sum
 .env
 
 # Temporary directory
+
+# Editors
+.vscode
 tmp/
