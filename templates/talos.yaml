@@ -2,73 +2,90 @@
 # Talos Machine Configuration patch for {{ .Hostname }}
 
 machine:
-{{ if .NTPServers }}
-    #
-    #   NTP settings
-    #
-    time:
-        disabled: false # Indicates if the time service is disabled for the machine.
-        servers:
+{{- if gt (len .NTPServers) 0 }}
+  time:
+    disabled: false # Indicates if the time service is disabled for the machine.
+    servers:
 {{- range .NTPServers }}
+    - {{ . }}
+{{- end }}
+{{- end }}
+  network:
+    hostname: {{ .Hostname }}
+    interfaces:
+{{- range .Bondings }}
+    - interface: {{ .Name }}
+      addresses:
+{{ range .IPsWithCIDR }}
         - {{ . }}
 {{- end }}
-{{- end }}
-    network:
-        hostname: {{ .Hostname }}
-        interfaces:
-{{- range .Bondings }}
-        - interface: {{ .Name }}
-          addresses:
-{{- range .IPsWithCIDR }}
-          - {{ . }}
-{{- end }}
-          bond:
-            mode: 802.3ad
-            lacpRate: fast
-            interfaces:
-{{- range .Interfaces }}
-            - {{ .Name -}}
+    bond:
+      mode: 802.3ad
+      lacpRate: fast
+      interfaces:
+{{ range .Interfaces }}
+      - {{ .Name -}}
 {{ end }}
 {{ end }}
 {{- range .Interfaces }}
-{{ if .IPsWithCIDR }}
-        - interface: {{ .Name }}
-          addresses:
+{{- if gt (len .IPsWithCIDR) 0 }}
+      - interface: {{ .Name }}
+        addresses:
 {{- range .IPsWithCIDR }}
-          - {{ . }}
+        - {{ . }}
 {{- end }}
 {{- end }}
 {{- end }}
     nodeLabels:
-       # Here is the typical topology order
-       # 1. topology.kubernetes.io/region
-       # 2. topology.kubernetes.io/zone
-       # 3. topology.rook.io/datacenter
-       # 4. topology.rook.io/room
-       # 5. topology.rook.io/pod
-       # 6. topology.rook.io/pdu
-       # 7. topology.rook.io/row
-       # 8. topology.rook.io/rack
-       # 9. topology.rook.io/chassis
-{{ if .Region }}
-        topology.kubernetes.io/region: {{ .Region }}
-{{ end }}
-{{ if .Site }}
-        topology.kubernetes.io/zone: {{ .Site }}
-{{ end }}
-        device.netbox.org/role: {{ .Role }}
-        device.netbox.org/serial: {{ .Serial }}
+      # Here is the typical topology order
+      # 1. topology.kubernetes.io/region
+      # 2. topology.kubernetes.io/zone
+      # 3. topology.rook.io/datacenter
+      # 4. topology.rook.io/room
+      # 5. topology.rook.io/pod
+      # 6. topology.rook.io/pdu
+      # 7. topology.rook.io/row
+      # 8. topology.rook.io/rack
+      # 9. topology.rook.io/chassis
+{{- if gt (len .Region) 0 }}
+      topology.kubernetes.io/region: {{ .Region }}
+{{- end }}
+{{- if gt (len .Site) 0 }}
+      topology.kubernetes.io/zone: {{ .Site }}
+{{- end }}
+{{- if gt (len .Role) 0 }}
+      device.netbox.org/role: {{ .Role }}
+{{- end }}
+{{- if gt (len .Serial) 0 }}
+      device.netbox.org/serial: {{ .Serial }}
+{{- end }}
+{{- if gt (len .Region) 0 }}
+      topology.netbox.org/region: {{ .Region }}
+{{- end }}
+{{- if gt (len .Site) 0 }}
+      topology.netbox.org/site: {{ .Site }}
+{{- end }}
+{{- if gt (len .Location) 0 }}
+      topology.netbox.org/location: {{ .Location }}
+{{- end }}
+{{- if gt (len .Rack) 0 }}
+      topology.netbox.org/rack: {{ .Rack }}
+{{- end }}
+{{- if gt (len .Position) 0 }}
+      topology.netbox.org/position: {{ .Position }}
+{{- end }}
+{{- if gt (len .Tenant) 0 }}
+      topology.retbox.org/tenant: {{ .Tenant }}
+{{- end }}
+{{- if gt (len .Cluster) 0 }}
+      topology.retbox.org/cluster: {{ .Cluster }}
+{{- end }}
 
-        topology.netbox.org/region: {{ .Region }}
-        topology.netbox.org/site: {{ .Site }}
-        topology.netbox.org/location: {{ .Location }}
-        topology.netbox.org/rack: {{ .Rack }}
-        topology.netbox.org/position: {{ .Position }}
-        topology.retbox.org/tenant: {{ .Tenant }}
-
+{{- if gt (len .LoggingEndpoints) 0 }}
     logging:
+      destinations:
 {{ range .LoggingEndpoints }}
-        destinations:
-        - endpoint: {{ . }} # Where to send logs. Supported protocols are "tcp" and "udp".
-          format: json_lines # Logs format.
+      - endpoint: {{ . }} # Where to send logs. Supported protocols are "tcp" and "udp".
+        format: json_lines # Logs format.
+{{- end }}
 {{- end }}

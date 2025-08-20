@@ -229,3 +229,137 @@ func (nb *Netbox) getInterfaceIP(id int) (result []IPAddress, err error) {
 
 	return result, err
 }
+
+func (nb *Netbox) GetVirtualMachines() (result []domain.MachineInfo) {
+	var apiResponse APIVirtualMachineResponse
+	var apiVirtualMachine []VirtualMachine
+	var uri string
+
+	var queryStrings []string
+
+	if nb.args.Region != "" {
+		queryStrings = append(queryStrings, fmt.Sprintf("region=%s", nb.args.Region))
+	}
+	if nb.args.Site != "" {
+		queryStrings = append(queryStrings, fmt.Sprintf("site=%s", nb.args.Site))
+	}
+	if nb.args.Location != "" {
+		queryStrings = append(queryStrings, fmt.Sprintf("site=%s", nb.args.Location))
+	}
+	if nb.args.Tenant != "" {
+		queryStrings = append(queryStrings, fmt.Sprintf("tenant=%s", nb.args.Tenant))
+	}
+	if nb.args.Role != "" {
+		queryStrings = append(queryStrings, fmt.Sprintf("role=%s", nb.args.Role))
+	}
+	if nb.args.Cluster != "" {
+		queryStrings = append(queryStrings, fmt.Sprintf("cluster=%s", nb.args.Cluster))
+	}
+
+	uri = fmt.Sprintf("api/virtualization/virtual-machines/?%s", strings.Join(queryStrings[:], "&"))
+
+	resultRaw, err := nb.getHTTPRequest(uri)
+
+	if err == nil {
+		err = json.Unmarshal(resultRaw, &apiResponse)
+
+		if err == nil {
+			apiVirtualMachine = apiResponse.Results
+		}
+	}
+
+	if err != nil {
+		slog.Error("GetVirtualMachines", "message", err.Error())
+	}
+
+	result = nb.transformAPIVirtualMachinesToMachineInfo(apiVirtualMachine)
+
+
+	slog.Debug("GetVirtualMachines", "machines", result)
+	return result
+}
+
+func (nb *Netbox) transformAPIVirtualMachinesToMachineInfo(vms []VirtualMachine) (result []domain.MachineInfo) {
+	for _, vm := range vms {
+		var mc domain.MachineInfo
+
+		mc.Hostname = vm.Name
+		mc.Serial = vm.Serial
+		//mc.BootstrapURL
+		//mc.DNS
+		//mc.JournaldURL
+		//mc.NTPServers
+
+		mc.Cluster = vm.Cluster.Name
+		mc.Site = vm.Site.Slug
+		mc.Rack = vm.Role.Slug
+
+		if vm.InterfaceCount > 0 {
+			mc.Interfaces,_ = nb.getInterfacesOfVirtualMachine(vm.ID)
+		}
+
+		result = append(result, mc)
+	}
+
+	return result
+}
+
+func (nb *Netbox) getInterfacesOfVirtualMachine(id int) (result []domain.PhysicalInterface, err error) {
+	response, err := nb.callInterfacesListWithVirtualMachineID(id)
+
+	if err == nil {
+		for _, vmi := range response.Results {
+				slog.Debug("getIfterfacesOfVirtualMachine", "iface", vmi)
+
+				var iface domain.PhysicalInterface
+
+				//iface.Gateways
+				ipAddresses, _ := nb.getVirtualInterfaceIP(vmi.ID)
+				for _, ipAddress := range ipAddresses {
+					iface.IPsWithCIDR = append(iface.IPsWithCIDR, ipAddress.Address)
+				}
+				iface.MACAddress = vmi.PrimaryMacAddress.Display
+				if vmi.PrimaryMacAddress.Display == "" {
+					slog.Warn("getInterfacesOfVirtualMachine",
+						"message", "The virtual interface does not own a primary MAC address",
+						"url", vmi.URL,
+					)
+				}
+				iface.MTU = vmi.Mtu
+				iface.Name = vmi.Name
+				//iface.VLANs = vmi.TaggedVlans
+				iface.UntaggedVLAN = vmi.UntaggedVlan.Vid
+
+				result = append(result, iface)
+		}
+	} else {
+		slog.Error("getInterfacesOfVirtualMachine", "message", err.Error())
+	}
+
+	return result, err
+}
+
+func (nb *Netbox) callInterfacesListWithVirtualMachineID(id int) (result APIVirtualInterfaceResponse, err error) {
+	uri := fmt.Sprintf("api/virtualization/interfaces/?virtual_machine_id=%v", id)
+	resultRaw, _ := nb.getHTTPRequest(uri)
+
+	err = json.Unmarshal(resultRaw, &result)
+	return result, err
+}
+
+func (nb *Netbox) getVirtualInterfaceIP(id int) (result []IPAddress, err error) {
+	var apiResponse APIAddressesResponse
+
+	uri := fmt.Sprintf("api/ipam/ip-addresses/?vminterface_id=%v", id)
+	resultRaw, err := nb.getHTTPRequest(uri)
+
+	if err == nil {
+		err = json.Unmarshal(resultRaw, &apiResponse)
+
+		if err == nil {
+			result = apiResponse.Results
+		}
+	}
+
+	return result, err
+}

@@ -39,10 +39,14 @@ func init() {
 	rootCmd.PersistentFlags().StringP("site", "", "", "Site to extract data from")
 	rootCmd.PersistentFlags().StringP("location", "", "", "Location to extract data from")
 	rootCmd.PersistentFlags().StringP("rack", "", "", "Apply a filter on the given rack")
+	rootCmd.PersistentFlags().StringP("cluster", "", "", "Apply a filter on the given cluster")
 
 	// Usage filters
 	rootCmd.PersistentFlags().StringP("tenant", "", "", "Tenant to extract data from")
 	rootCmd.PersistentFlags().StringP("role", "", "", "Apply a filter on the given role")
+
+	// Physical or virtual devices?
+	rootCmd.PersistentFlags().BoolP("virtualization", "", false, "Use the virtual machines' inventory instead of the physical devices")
 }
 
 func configureLogger(cmd *cobra.Command) {
@@ -70,6 +74,8 @@ func processRootArgs(cmd *cobra.Command) *domain.ConfigurationArgs {
 	rack, _ := cmd.Flags().GetString("rack")
 	tenant, _ := cmd.Flags().GetString("tenant")
 	role, _ := cmd.Flags().GetString("role")
+	virtualization, _ := cmd.Flags().GetBool("virtualization")
+	cluster, _ := cmd.Flags().GetString("cluster")
 
 	if endpoint == "" {
 		slog.Error("endpoint option must be given")
@@ -95,5 +101,7 @@ func processRootArgs(cmd *cobra.Command) *domain.ConfigurationArgs {
 		Rack:            rack,
 		Tenant:          tenant,
 		Role:            role,
+		VirtualMachines: virtualization,
+		Cluster: cluster,
 	}
 }

@@ -13,6 +13,9 @@ type ConfigurationArgs struct {
 
 	Tenant string
 	Role   string
+
+	VirtualMachines bool
+	Cluster string
 }
 
 type ButaneArgs struct {

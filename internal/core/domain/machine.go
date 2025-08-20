@@ -16,6 +16,7 @@ type MachineInfo struct {
 	NTPServers       []string
 
 	// Topology
+	Cluster	 string
 	Region   string
 	Site     string
 	Role     string
@@ -33,6 +34,7 @@ type PhysicalInterface struct {
 	IPsWithCIDR []string
 	Gateways    []string
 	VLANs       []VLANInterface
+	UntaggedVLAN int
 	LAG         string
 }
 

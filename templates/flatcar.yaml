@@ -8,14 +8,6 @@ kernel_arguments:
   - fips=1
   - flatcar.autologin=tty1
 
-passwd:
-  groups:
-  - name: core
-    password_hash: {{ .CoreUser.Password }}
-    ssh_authorized_keys:
-{{- range .CoreUser.AuthorizedKeys }}
-    - {{ . -}}
-{{ end }}
 
 storage:
   directories: []
@@ -32,6 +24,7 @@ storage:
         # Management attributes
         tenant={{ .Tenant }}
         role={{ .Role }}
+        cluster={{ .Cluster }}
 
         # Topology attributes
         region={{ .Region }}
@@ -40,7 +33,7 @@ storage:
         rack={{ .Rack }}
         position={{ .Position }}
 
-{{ if len .JournaldEndpointURL gt 0 }}
+{{ if gt (len .JournaldURL) 0 }}
     #
     # A journald endpoint is configured if the variable is provided
     #
@@ -50,13 +43,13 @@ storage:
     contents:
       inline: |
         [Upload]
-        URL={{ .JournaldEndointURL }}
+        URL={{ .JournaldURL }}
         # ServerKeyFile=/etc/ssl/private/journal-upload.pem
         # ServerCertificateFile=/etc/ssl/certs/journal-upload.pem
         # TrustedCertificateFile=/etc/ssl/ca/trusted.pem
 {{ end }}
 
-{{ if len .NtpServers gt 0 }}
+{{ if gt (len .NTPServers) 0 }}
     #
     # NTP services are required
     #
@@ -66,7 +59,7 @@ storage:
     contents:
       inline: |
         [Time]
-        NTP={{range .NtpServers}}{{ . }} {{end}}
+        NTP={{range .NTPServers}}{{ . }} {{end}}
         RootDistanceMaxSec=5
         PollIntervalMinSec=32
         PollIntervalMaxSec=2048
@@ -147,8 +140,8 @@ storage:
 
     ###########################################################################
     # Interfaces out of bondings
-{{ range .PhysicalInterfaces }}
-{{ if len .LAGName eq 0 }}
+{{ range .Interfaces }}
+{{ if eq (len .LAG) 0 }}
   - path: /etc/systemd/network/00-{{ .Name }}.network
     overwrite: true
     contents:
@@ -161,19 +154,18 @@ storage:
         MTUBytes={{ .MTU }}
 
         [Network]
-{{ if len .IPsWithCIDR gt 0 }}
-{{ range .IPsWithCIDR }}
+{{- if gt (len .IPsWithCIDR) 0 -}}
+{{- range .IPsWithCIDR }}
         Address={{ . }}
-{{ end }}
-{{ range .Gateways }}
+{{ end -}}
+{{ range .Gateways -}}
         Gateway={{ . }}
-{{ end }}
+{{ end -}}
 {{ else }}
-        DHCP=ipv4 ou ipv6 (si non indiqué, vaut false, true = ipv4 et ipv6)
+        DHCP=yes
+{{- end -}}
 {{ end }}
-
-{{ end }}
-{{ end }}
+{{ end -}}
 
     ###########################################################################
     #

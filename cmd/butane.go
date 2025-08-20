@@ -30,6 +30,8 @@ The available profiles are:
 * live: the machine runs the final configuration.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
+		var machines []domain.MachineInfo
+
 		configureLogger(cmd)
 
 		cmdRootArgs := processRootArgs(cmd)
@@ -42,7 +44,11 @@ The available profiles are:
 			os.Exit(1)
 		}
 
-		machines := cmdb.GetMachines()
+		if cmdRootArgs.VirtualMachines {
+			machines = cmdb.GetVirtualMachines()
+		} else {
+			machines = cmdb.GetMachines()
+		}
 
 		output, err := output.NewDirectory(cmdRootArgs.OutputDirectory)
 		if err != nil {

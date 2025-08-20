@@ -146,14 +146,7 @@ type Device struct {
 	} `json:"platform"`
 	Serial   string `json:"serial"`
 	AssetTag any    `json:"asset_tag"`
-	Site     struct {
-		ID          int    `json:"id"`
-		URL         string `json:"url"`
-		Display     string `json:"display"`
-		Name        string `json:"name"`
-		Slug        string `json:"slug"`
-		Description string `json:"description"`
-	} `json:"site"`
+	Site      Site `json:"site"`
 	Location struct {
 		ID          int    `json:"id"`
 		URL         string `json:"url"`
