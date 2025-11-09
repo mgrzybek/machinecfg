@@ -1,0 +1,37 @@
+version: '3'
+
+vars:
+  DRAWIO_SVG_OPTS: --format svg --embed-svg-images
+  DRAWIO: draw.io
+
+tasks:
+  default:
+    desc: Export the whole pages (architecture.svg)
+    deps:
+      - architecture.svg
+
+  architecture.svg:
+    desc: Export the architecture page to SVG
+    cmds:
+      - |
+        {{.DRAWIO}} {{.DRAWIO_SVG_OPTS}} \
+          --export architecture.drawio \
+          --page-index 0 \
+          --output architecture.svg
+    sources:
+      - architecture.drawio
+    generates:
+      - architecture.svg
+
+  internals.svg:
+    desc: Export the internals page to SVG
+    cmds:
+      - |
+        {{.DRAWIO}} {{.DRAWIO_SVG_OPTS}} \
+          --export internals.drawio \
+          --page-index 0 \
+          --output internals.svg
+    sources:
+      - internals.drawio
+    generates:
+      - internals.svg

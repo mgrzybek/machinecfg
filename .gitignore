@@ -30,3 +30,4 @@ go.work.sum
 # Editors
 .vscode
 tmp/
+.task
