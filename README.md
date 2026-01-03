@@ -37,9 +37,3 @@ Flags:
 
 Use "machinecfg [command] --help" for more information about a command.
 ```
-
-### How-Tos
-
-To configure machines using Ignition and deploying them using Matchbox: [Using Netbox DCIM to deploy Butane/Ignition-based systems and configure Matchbox](./docs/butane.md)
-
-To configure Kea DHCP server: [Creating the Kea DHCP configuration](./docs/kea.md)
