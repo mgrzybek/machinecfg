@@ -1,142 +1,15 @@
-version: '3'
-
-vars:
-  BINARY: machinecfg
-  MODULE: github.com/mgrzybek/machinecfg
-  GO_VERSION: 1.24
-  TMP: tmp
-  TEST: test
-
+version: 3
 tasks:
-  # ====================================================================
-  # Go: usual targets
-  # ====================================================================
-
-  default:
-    desc: Build the program (default target)
-    deps: [build]
-
-  build:
-    desc: 'Build the program executable'
+  cli:
     cmds:
-      - CGO_ENABLED=0 go build -o {{.BINARY}} main.go
-    sources:
-      - go.mod
-      - main.go
-    generates:
-      - '{{.BINARY}}'
-
-  dist-clean:
-    desc: Clean the created artifacts
-    cmds:
-      - rm -f {{.BINARY}} c.out
-
-  clean:
-    desc: Clean the temporary files and remove stopped Docker containers/volumes
-    cmds:
-      - |
-        if [ -d {{.TMP}}/netbox ]; then
-          cd {{.TMP}}/netbox && docker compose down
-        fi
-      - rm -rf {{.TMP}}/*
-      - docker rm $(docker ps -a -q) || true # Remove stopped containers
-      - docker volume rm $(docker volume ls -q) || true # Remove unused volumes
-
-  fmt:
-    desc: Format the sources using go fmt
-    cmds:
-      - find . -type f -name "*.go" -exec go fmt {} \;
-
-  docs:
-    desc: 'Generate the SVG drawings (calls Makefile in docs/)'
-    cmds:
-      - task --dir docs
-
-  # ====================================================================
-  # Testing: offline and online
-  # ====================================================================
-
-  test/netbox.sql:
-    desc: Create the netbox dump
-    cmds:
-      - cd {{.TMP}}/netbox && docker compose exec -u postgres postgres bash -c "pg_dump -U netbox" > ../../{{.TEST}}/netbox.sql
-    generates:
-      - '{{.TEST}}/netbox.sql'
-
-  netbox-prepare:
-    desc: Deploy netbox using docker compose and restore dump
-    cmds:
-      - test -d {{.TMP}}/netbox || git clone -b release https://github.com/netbox-community/netbox-docker.git {{.TMP}}/netbox
-      - mkdir -p {{.TMP}}/netbox/docker-entrypoint-initdb.d
-      - cp {{.TEST}}/docker-compose.override.yml {{.TMP}}/netbox
-      - cp {{.TEST}}/netbox.sql {{.TMP}}/netbox/docker-entrypoint-initdb.d
-      - cd {{.TMP}}/netbox && docker compose pull
-      - cd {{.TMP}}/netbox && docker compose up -d
-      - awk '/Token for machinecfg/ {print $$5}' {{.TEST}}/netbox.sql > {{.TMP}}/token
-    deps:
-      - '{{.TEST}}/netbox.sql'
-
+    - cd cli && go build -o ../machinecfg
   test:
-    desc: Run go test with race detector
-    deps: [fmt, build]
+    vars:
+      root_opts: --sites=maison --roles=cattle
+      netbox_opts: --netbox-endpoint=$NETBOX_ENDPOINT --netbox-token=$NETBOX_TOKEN
+      output_opts: --output-directory=tmp
+
     cmds:
-      - go test -v -race -buildvcs ./...
-
-  test-online:
-    desc: Run tests against a remote Netbox endpoint
-    deps: [build, netbox-prepare]
-    cmds:
-      - echo "TODO - Run online tests against Netbox" # Maintenir le TODO du Makefile
-
-  validate:
-    desc: Start a validation process of Netbox objects
-    deps: [build]
-    cmds:
-      - echo "TODO -  Start validation process" # Maintenir le TODO du Makefile
-
-  # ====================================================================
-  # Go: packaging targets
-  # ====================================================================
-
-  get:
-    desc: Download required modules (go get)
-    cmds:
-      - go get ./...
-
-  go.mod:
-    desc: Initialize go.mod and tidy modules
-    cmds:
-      - go mod init {{.MODULE}}
-      - go mod tidy
-
-  # ====================================================================
-  # Go: quality targets
-  # ====================================================================
-
-  c.out:
-    desc: Create the coverage file
-    cmds:
-      - go test ./... -coverprofile=c.out
-    generates:
-      - c.out
-
-  coverage:
-    desc: Show the coverage ratio per function
-    deps: [c.out]
-    cmds:
-      - go tool cover -func=c.out
-
-  coverage-code:
-    desc: Show the covered code in a browser
-    deps: [c.out]
-    cmds:
-      - go tool cover -html=c.out
-
-  audit:
-    desc: Run quality control checks (verify, vet, staticcheck, govulncheck, race)
-    cmds:
-      - go mod verify
-      - go vet ./...
-      - go run honnef.co/go/tools/cmd/staticcheck@latest -checks=all,-ST1000,-U1000 ./...
-      - go run golang.org/x/vuln/cmd/govulncheck@latest ./...
-      - go test -race -buildvcs -vet=off ./...
+    - ./machinecfg {{.root_opts}} tinkerbell hardware {{.netbox_opts}} {{.output_opts}}
+    - ./machinecfg {{.root_opts}} butane flatcar {{.netbox_opts}} {{.output_opts}}
+    - ./machinecfg {{.root_opts}} talos machineconfig {{.netbox_opts}} {{.output_opts}}

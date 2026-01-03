@@ -1,0 +1,35 @@
+---
+apiVersion: tinkerbell.org/v1alpha1
+kind: Hardware
+metadata:
+  labels:
+    kubernetes: "true"
+  name: {{.Spec.Metadata.Instance.Hostname}}
+  namespace: tinkerbell-system
+spec:
+  auto:
+    enrollmentEnabled: false
+  disks:
+  - device: /dev/sda
+  interfaces:
+{{- range .Spec.Interfaces }}
+  - dhcp:
+      arch: {{.DHCP.Arch}}
+      hostname: {{.DHCP.Hostname}}
+      ip:
+        address: {{.DHCP.IP.Address}}
+        gateway: {{.DHCP.IP.Gateway}}
+        netmask: {{.DHCP.IP.Netmask}}
+      lease_time: 86400
+      mac: {{.DHCP.MAC}}
+      name_servers: []
+      uefi: true
+    disableDhcp: false
+    netboot:
+      allowPXE: true
+      allowWorkflow: true
+{{- end }}
+  metadata:
+    instance:
+      hostname: {{.Spec.Metadata.Instance.Hostname}}
+      id: {{.Spec.Metadata.Instance.ID}}
