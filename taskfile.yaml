@@ -13,3 +13,6 @@ tasks:
     - ./machinecfg {{.root_opts}} tinkerbell hardware {{.netbox_opts}} {{.output_opts}}
     - ./machinecfg {{.root_opts}} butane flatcar {{.netbox_opts}} {{.output_opts}}
     - ./machinecfg {{.root_opts}} talos machineconfig {{.netbox_opts}} {{.output_opts}}
+
+  clean-tmp:
+    cmd: rm -rf tmp/*
