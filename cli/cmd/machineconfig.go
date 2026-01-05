@@ -36,7 +36,7 @@ var machineconfigCmd = &cobra.Command{
 			if rootArguments.OutputDirectory == "" {
 				outputFileDescriptor = os.Stdout
 			} else {
-				outputFileDescriptor, err = createFileDescriptor(rootArguments.OutputDirectory, c.Hostname, "yaml")
+				outputFileDescriptor, err = createFileDescriptor(rootArguments.OutputDirectory, c.Hostname, ".patch.yaml")
 			}
 			defer outputFileDescriptor.Close()
 			if err != nil {
