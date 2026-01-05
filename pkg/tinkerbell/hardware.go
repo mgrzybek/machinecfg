@@ -16,7 +16,7 @@ import (
 
 	"machinecfg/pkg/common"
 
-	tinkerbellKubeObjects "github.com/tinkerbell/tinkerbell/api/v1alpha1/tinkerbell"
+	tinkerbellKubeObjects "github.com/tinkerbell/tink/api/v1alpha1"
 )
 
 func CreateHardwares(client *netbox.APIClient, ctx context.Context, filters common.DeviceFilters) (result []tinkerbellKubeObjects.Hardware, err error) {

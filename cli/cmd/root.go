@@ -11,6 +11,12 @@ import (
 
 	"github.com/spf13/cobra"
 
+	tinkerbellKubeObjects "github.com/tinkerbell/tink/api/v1alpha1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"machinecfg/pkg/common"
 )
 
@@ -104,11 +110,6 @@ func processRootArgs(cmd *cobra.Command) *ConfigurationArgs {
 		fatalError = true
 	}
 
-	if !dirExists(outputDirectory) {
-		slog.Error("output-directory does not exist")
-		fatalError = true
-	}
-
 	/*
 		if regions == "" {
 			slog.Error("regions option must be given")
@@ -192,4 +193,45 @@ func fileExists(path string) bool {
 func createFileDescriptor(dirPath, filename, extension string) (*os.File, error) {
 	outputPath := fmt.Sprintf("%s/%s.%s", dirPath, filename, extension)
 	return os.Create(outputPath)
+}
+
+func getK8sClient() (client.Client, error) {
+	var config *rest.Config
+	var scheme *runtime.Scheme
+	var err error
+
+	config, err = rest.InClusterConfig()
+	if err != nil {
+		slog.Debug("getk8sClient", "message", "In-Cluster failed, trying Out-Cluster configuration...")
+
+		kubeconfig := getKubeconfigPath()
+
+		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
+		if err != nil {
+			return nil, fmt.Errorf("cannot find any kubeconfig: %w", err)
+		} else {
+			slog.Info("getK8sClient", "message", "Out-Cluster configuration found", "kubeconfig", kubeconfig)
+		}
+	} else {
+		slog.Info("getK8sClient", "message", "In-Cluster configuration found")
+	}
+
+	scheme = runtime.NewScheme()
+
+	err = tinkerbellKubeObjects.AddToScheme(scheme)
+	if err != nil {
+		slog.Error("getK8sClient", "message", err.Error())
+		return nil, err
+	}
+
+	return client.New(config, client.Options{Scheme: scheme})
+}
+
+func getKubeconfigPath() string {
+	kubeconfig := os.Getenv("KUBECONFIG")
+	if kubeconfig == "" {
+		kubeconfig = os.Getenv("HOME") + "/.kube/config"
+	}
+
+	return kubeconfig
 }

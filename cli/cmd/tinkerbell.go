@@ -1,6 +1,5 @@
 /*
 Copyright © 2025 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
@@ -12,7 +11,7 @@ import (
 var tinkerbellCmd = &cobra.Command{
 	Use:   "tinkerbell",
 	Short: "Manage Tinkerbell objects",
-	Long: ``,
+	Long:  ``,
 }
 
 func init() {

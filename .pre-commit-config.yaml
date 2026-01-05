@@ -9,3 +9,8 @@ repos:
   rev: v8.24.2
   hooks:
   - id: gitleaks
+- repo: https://github.com/dnephin/pre-commit-golang
+  rev: v0.5.1 # Vérifiez la dernière version disponible
+  hooks:
+  -   id: go-fmt
+  -   id: go-imports # Optionnel : range aussi vos imports
