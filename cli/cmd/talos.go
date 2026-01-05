@@ -1,6 +1,5 @@
 /*
 Copyright © 2025 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
@@ -12,7 +11,7 @@ import (
 var talosCmd = &cobra.Command{
 	Use:   "talos",
 	Short: "Manage Talos Linux",
-	Long: ``,
+	Long:  ``,
 }
 
 func init() {

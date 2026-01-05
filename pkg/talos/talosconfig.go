@@ -115,9 +115,9 @@ func extractTalosData(ctx context.Context, c *netbox.APIClient, device *netbox.D
 			}
 		}
 		talosInterfaces = append(talosInterfaces, &v1alpha1.Device{
-			DeviceCIDR: deviceCIDR,
-			DeviceVlans: talosVlans,
-			DeviceDHCP: &dhcpFalse,
+			DeviceCIDR:      deviceCIDR,
+			DeviceVlans:     talosVlans,
+			DeviceDHCP:      &dhcpFalse,
 			DeviceInterface: netboxInterface.Name,
 		})
 	}

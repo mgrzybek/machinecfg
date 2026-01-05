@@ -1,6 +1,5 @@
 /*
 Copyright © 2025 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
@@ -19,7 +18,7 @@ import (
 var machineconfigCmd = &cobra.Command{
 	Use:   "machineconfig",
 	Short: "Reads devices from Netbox and creates MachineConfig file ",
-	Long: ``,
+	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		configureLogger(cmd)
 		rootArguments := processRootArgs(cmd)

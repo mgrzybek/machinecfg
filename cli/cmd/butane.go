@@ -1,6 +1,5 @@
 /*
 Copyright © 2025 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
@@ -12,7 +11,7 @@ import (
 var butaneCmd = &cobra.Command{
 	Use:   "butane",
 	Short: "Manage butane / ignition configurations",
-	Long: ``,
+	Long:  ``,
 }
 
 func init() {
