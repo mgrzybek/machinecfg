@@ -26,15 +26,15 @@ func CreateHardwares(client *netbox.APIClient, ctx context.Context, filters comm
 	switch {
 	case len(filters.Tenants) > 0 && filters.Tenants[0] != "" && len(filters.Locations) > 0 && filters.Locations[0] != "":
 		slog.Info("CreateHardwares", "message", "tenants+locations", "tenants", len(filters.Tenants), "locations", len(filters.Locations))
-		devices, response, err = client.DcimAPI.DcimDevicesList(ctx).HasPrimaryIp(true).Status([]string{"active"}).Site(filters.Sites).Location(filters.Locations).Tenant(filters.Tenants).Role(filters.Roles).Execute()
+		devices, response, err = client.DcimAPI.DcimDevicesList(ctx).HasPrimaryIp(true).Status([]string{"staged"}).Site(filters.Sites).Location(filters.Locations).Tenant(filters.Tenants).Role(filters.Roles).Execute()
 	case len(filters.Tenants) > 0 && filters.Tenants[0] != "":
 		slog.Info("CreateHardwares", "message", "tenants")
-		devices, response, err = client.DcimAPI.DcimDevicesList(ctx).HasPrimaryIp(true).Status([]string{"active"}).Site(filters.Sites).Tenant(filters.Tenants).Role(filters.Roles).Execute()
+		devices, response, err = client.DcimAPI.DcimDevicesList(ctx).HasPrimaryIp(true).Status([]string{"staged"}).Site(filters.Sites).Tenant(filters.Tenants).Role(filters.Roles).Execute()
 	case len(filters.Locations) > 0 && filters.Locations[0] != "":
 		slog.Info("CreateHardwares", "message", "locations")
-		devices, response, err = client.DcimAPI.DcimDevicesList(ctx).HasPrimaryIp(true).Status([]string{"active"}).Site(filters.Sites).Location(filters.Locations).Role(filters.Roles).Execute()
+		devices, response, err = client.DcimAPI.DcimDevicesList(ctx).HasPrimaryIp(true).Status([]string{"staged"}).Site(filters.Sites).Location(filters.Locations).Role(filters.Roles).Execute()
 	default:
-		devices, response, err = client.DcimAPI.DcimDevicesList(ctx).HasPrimaryIp(true).Status([]string{"active"}).Site(filters.Sites).Role(filters.Roles).Execute()
+		devices, response, err = client.DcimAPI.DcimDevicesList(ctx).HasPrimaryIp(true).Status([]string{"staged"}).Site(filters.Sites).Role(filters.Roles).Execute()
 	}
 
 	if err != nil {

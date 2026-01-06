@@ -37,3 +37,33 @@ Flags:
 
 Use "machinecfg [command] --help" for more information about a command.
 ```
+
+## Netbox integration
+
+| Device status   | Tinkerbell action |
+|-----------------|-------------------|
+| Offline         | The device is not connected. The `Hardware` should deleted. |
+| Planned         | The device is not ready yet but you know where to install it. |
+| Staged          | The device is ready for commissioning. The `Hardware` can be crated. |
+| Active          | The `Workflow` succeeded. The status has been updated to "Active". |
+| Decommissioning | The device needs to be decommissioned from a cluster. Some cleanup `Workflow` can be triggered too. |
+| Failed          | The `Workflow` failed. |
+
+```mermaid
+stateDiagram-v2
+  direction LR
+
+  state if_failure_staged <<choice>>
+  state if_failure_deco <<choice>>
+
+  [*] --> Offline
+  Offline --> Planned
+  Planned --> Staged
+  Staged --> if_failure_staged
+  if_failure_staged --> Active: Success
+  if_failure_staged --> Failed: Failure
+  Active --> Decommissioning
+  Decommissioning --> if_failure_deco
+  if_failure_deco --> Offline: Success
+  if_failure_deco --> Failed: Failure
+```
