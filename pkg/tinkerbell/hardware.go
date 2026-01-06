@@ -49,7 +49,7 @@ func CreateHardwares(client *netbox.APIClient, ctx context.Context, filters comm
 	for _, device := range devices.Results {
 		hardware, err := extractHardwareData(ctx, client, &device)
 		if err != nil {
-			slog.Error("createHardwares", "message", err.Error())
+			slog.Error("CreateHardwares", "message", err.Error(), "device", *device.Name.Get(), "device_id", device.Id)
 		}
 		if hardware != nil {
 			slog.Info(fmt.Sprintf("%v", hardware))
@@ -81,12 +81,12 @@ func PrintExternalYAML(hardware *tinkerbellKubeObjects.Hardware, templatePath st
 
 	tmpl, err = template.New(templatePath).ParseFiles(templatePath)
 	if err != nil {
-		slog.Error("printExternalYAML", "message", err.Error())
+		slog.Error("PrintExternalYAML", "message", err.Error())
 		return
 	}
 	err = tmpl.Execute(destination, hardware)
 	if err != nil {
-		slog.Error("printExternalYAML", "message", err.Error())
+		slog.Error("PrintExternalYAML", "message", err.Error())
 		return
 	}
 }
@@ -208,7 +208,7 @@ func getMacAddrFromIfaceID(c *netbox.APIClient, ctx *context.Context, interfaceI
 		}
 
 		if result == "" {
-			err = fmt.Errorf("pas d'adresse MAC trouvée pour: %s (%v)", interfaceResult.GetName(), interfaceResult.Id)
+			err = fmt.Errorf("iface %s, id %v does not have any MAC address", interfaceResult.GetName(), interfaceResult.Id)
 		}
 	}
 	return result, err

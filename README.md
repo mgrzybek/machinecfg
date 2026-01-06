@@ -44,7 +44,7 @@ Use "machinecfg [command] --help" for more information about a command.
 |-----------------|-------------------|
 | Offline         | The device is not connected. The `Hardware` should deleted. |
 | Planned         | The device is not ready yet but you know where to install it. |
-| Staged          | The device is ready for commissioning. The `Hardware` can be crated. |
+| Staged          | The device is ready for commissioning. The `Hardware` can be created. |
 | Active          | The `Workflow` succeeded. The status has been updated to "Active". |
 | Decommissioning | The device needs to be decommissioned from a cluster. Some cleanup `Workflow` can be triggered too. |
 | Failed          | The `Workflow` failed. |

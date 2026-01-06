@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 
 	tinkerbellKubeObjects "github.com/tinkerbell/tink/api/v1alpha1"
+	"k8s.io/apimachinery/pkg/api/errors"
 
 	"machinecfg/pkg/tinkerbell"
 )
@@ -51,7 +52,9 @@ Only Primary and OOB addresses are used to provision machines.`,
 			} else {
 				err = k8sClient.Create(ctx, &h)
 				if err != nil {
-					slog.Error(err.Error())
+					if !errors.IsAlreadyExists(err) {
+						slog.Error("hardwareCmd", "message", err.Error(), "namespace", h.Namespace, "device", h.Name)
+					}
 				}
 			}
 		}
