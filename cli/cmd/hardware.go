@@ -24,11 +24,17 @@ type HardwareConfigurationArgs struct {
 // hardwareCmd represents the hardware command
 var hardwareCmd = &cobra.Command{
 	Use:   "hardware",
-	Short: "Read devices from Netbox and create Hardware objects",
+	Short: "Read devices from Netbox and manage Hardware objects",
 	Long: `Read DCIM or Virtualisation sections to get the designated devices.
 
-Only Primary and OOB addresses are used to provision machines.`,
+Only Primary and OOB addresses are used to provision machines.
+
+When device is in an active on staged status, it is created.
+When device is in offline or planned status, it is deleted.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		var successCounter int
+		var failureCounter int
+
 		configureLogger(cmd)
 		rootArguments := processRootArgs(cmd)
 		hardwareArguments := processHardwareArgs(cmd)
@@ -53,19 +59,34 @@ Only Primary and OOB addresses are used to provision machines.`,
 				if err != nil {
 					if !errors.IsAlreadyExists(err) {
 						slog.Error("hardwareCmd", "message", err.Error(), "namespace", h.Namespace, "device", h.Name)
+						failureCounter = failureCounter + 1
+					} else {
+						successCounter = successCounter + 1
 					}
+				} else {
+					successCounter = successCounter + 1
 				}
+
+				slog.Info("hardwareCmd", "message", "creations", "success_nb", successCounter, "failure_nb", failureCounter)
 			}
 		}
 
 		if k8sClient != nil {
+			successCounter = 0
+			failureCounter = 0
+
 			hardwares, _ := tinkerbell.CreateHardwaresToPrune(client, ctx, rootArguments.Filters)
 			for _, h := range hardwares {
 				err = k8sClient.Delete(ctx, &h)
 				if err != nil {
 					slog.Error("hardwareCmd", "message", err.Error(), "namespace", h.Namespace, "device", h.Name)
+					failureCounter = failureCounter + 1
+				} else {
+					successCounter = successCounter + 1
 				}
 			}
+
+			slog.Info("hardwareCmd", "message", "deletions", "success_nb", successCounter, "failure_nb", failureCounter)
 		}
 
 	},
