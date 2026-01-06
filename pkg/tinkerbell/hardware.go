@@ -92,6 +92,7 @@ func PrintExternalYAML(hardware *tinkerbellKubeObjects.Hardware, templatePath st
 }
 
 func extractHardwareData(ctx context.Context, c *netbox.APIClient, device *netbox.DeviceWithConfigContext) (*tinkerbellKubeObjects.Hardware, error) {
+	var namespace string
 	var primaryMacAddress string
 	allowPXE := true
 	allowWorkflow := true
@@ -125,6 +126,13 @@ func extractHardwareData(ctx context.Context, c *netbox.APIClient, device *netbo
 		return nil, err
 	}
 
+	tenant := device.Tenant.Get()
+	if tenant == nil {
+		namespace = "default"
+	} else {
+		namespace = tenant.Name
+	}
+
 	return &tinkerbellKubeObjects.Hardware{
 		TypeMeta: v1.TypeMeta{
 			APIVersion: "tinkerbell.org/v1alpha1",
@@ -132,7 +140,7 @@ func extractHardwareData(ctx context.Context, c *netbox.APIClient, device *netbo
 		},
 		ObjectMeta: v1.ObjectMeta{
 			Name:      *device.Name.Get(),
-			Namespace: "default",
+			Namespace: namespace,
 			Labels: map[string]string{
 				"generated-by": "machinecfg",
 
@@ -222,4 +230,45 @@ func cidrToNetmask(cidr string) (string, error) {
 	}
 
 	return net.IP(ipNet.Mask).String(), nil
+}
+
+func CreateHardwaresToPrune(client *netbox.APIClient, ctx context.Context, filters common.DeviceFilters) (result []tinkerbellKubeObjects.Hardware, err error) {
+	var devices *netbox.PaginatedDeviceWithConfigContextList
+	var response *http.Response
+
+	switch {
+	case len(filters.Tenants) > 0 && filters.Tenants[0] != "" && len(filters.Locations) > 0 && filters.Locations[0] != "":
+		slog.Info("CreateHardwaresToPrune", "message", "tenants+locations", "tenants", len(filters.Tenants), "locations", len(filters.Locations))
+		devices, response, err = client.DcimAPI.DcimDevicesList(ctx).HasPrimaryIp(true).Status([]string{"offline", "planned"}).Site(filters.Sites).Location(filters.Locations).Tenant(filters.Tenants).Role(filters.Roles).Execute()
+	case len(filters.Tenants) > 0 && filters.Tenants[0] != "":
+		slog.Info("CreateHardwaresToPrune", "message", "tenants")
+		devices, response, err = client.DcimAPI.DcimDevicesList(ctx).HasPrimaryIp(true).Status([]string{"offline", "planned"}).Site(filters.Sites).Tenant(filters.Tenants).Role(filters.Roles).Execute()
+	case len(filters.Locations) > 0 && filters.Locations[0] != "":
+		slog.Info("CreateHardwaresToPrune", "message", "locations")
+		devices, response, err = client.DcimAPI.DcimDevicesList(ctx).HasPrimaryIp(true).Status([]string{"offline", "planned"}).Site(filters.Sites).Location(filters.Locations).Role(filters.Roles).Execute()
+	default:
+		devices, response, err = client.DcimAPI.DcimDevicesList(ctx).HasPrimaryIp(true).Status([]string{"offline", "planned"}).Site(filters.Sites).Role(filters.Roles).Execute()
+	}
+
+	if err != nil {
+		slog.Error("CreateHadwaresToPrune", "error", err.Error(), "message", response.Body)
+		return result, err
+	}
+
+	if devices.Count == 0 {
+		slog.Warn("CreateHardwaresToPrune", "message", "no device found, this must not be what you expected")
+	}
+
+	for _, device := range devices.Results {
+		hardware, err := extractHardwareData(ctx, client, &device)
+		if err != nil {
+			slog.Error("CreateHardwaresToPrune", "message", err.Error(), "device", *device.Name.Get(), "device_id", device.Id)
+		}
+		if hardware != nil {
+			slog.Info(fmt.Sprintf("%v", hardware))
+			result = append(result, *hardware)
+		}
+	}
+
+	return result, err
 }

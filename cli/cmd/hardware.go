@@ -45,7 +45,6 @@ Only Primary and OOB addresses are used to provision machines.`,
 		client := netbox.NewAPIClientFor(rootArguments.Endpoint, rootArguments.Token)
 
 		hardwares, _ := tinkerbell.CreateHardwares(client, ctx, rootArguments.Filters)
-
 		for _, h := range hardwares {
 			if k8sClient == nil {
 				printYAMLFile(&h, rootArguments, hardwareArguments)
@@ -58,6 +57,17 @@ Only Primary and OOB addresses are used to provision machines.`,
 				}
 			}
 		}
+
+		if k8sClient != nil {
+			hardwares, _ := tinkerbell.CreateHardwaresToPrune(client, ctx, rootArguments.Filters)
+			for _, h := range hardwares {
+				err = k8sClient.Delete(ctx, &h)
+				if err != nil {
+					slog.Error("hardwareCmd", "message", err.Error(), "namespace", h.Namespace, "device", h.Name)
+				}
+			}
+		}
+
 	},
 }
 
