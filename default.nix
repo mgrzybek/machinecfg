@@ -5,7 +5,7 @@
 }:
 
 let
-  machinecfg-package = pkgs.buildGoModule {
+  machinecfg-package = pkgs.buildGo125Module {
     pname = "machinecfg";
     version = "${version}";
     src = pkgs.lib.cleanSource ./.;
@@ -13,7 +13,7 @@ let
     # Let's create a static binary
     buildFlagsArray = [ "-ldflags" "-s -w" ];
 
-    vendorHash = "sha256-lYlPtMX0m/ZcPIwNKMUJOHy3tklH9QVh+ysOwb8d5X4=";
+    vendorHash = "sha256-zu2WpbrRT3pCcOwJBowku/W92CX7VD2h5GC9OmovBGA=";
 
   };
 in {
