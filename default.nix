@@ -13,7 +13,7 @@ let
     # Let's create a static binary
     buildFlagsArray = [ "-ldflags" "-s -w" ];
 
-    vendorHash = "sha256-Pfmvw1SAO/YssLTJwTfc/2DQKATnMA9srBTYBG7FYYU=";
+    vendorHash = "sha256-lYlPtMX0m/ZcPIwNKMUJOHy3tklH9QVh+ysOwb8d5X4=";
 
   };
 in {
