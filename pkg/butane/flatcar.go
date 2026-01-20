@@ -188,15 +188,22 @@ func isVlanIDinVlanList(vlanID int32, vlans []netbox.VLAN) (result bool) {
 }
 
 func PrintIgnitionFile(cfg *v1_1.Config, fileDescriptor *os.File) {
+	ignitionBlob := generateIgnition(cfg)
+	fmt.Fprintf(fileDescriptor, "%s", ignitionBlob)
+}
+
+func generateIgnition(cfg *v1_1.Config) (result []byte) {
 	ignitionCfg, report, err := cfg.ToIgn3_4(common.TranslateOptions{})
 	if err != nil {
-		slog.Error("PrintIgnitionFile", "message", err.Error(), "report", report.String())
+		slog.Error("GetIgnitionFile", "message", err.Error(), "report", report.String())
 	} else {
-		ignitionJSON, err := json.MarshalIndent(ignitionCfg, "", "  ")
-		if err != nil {
-			slog.Error("PrintIgnitionFile", "message", err.Error())
-		} else {
-			fmt.Fprintf(fileDescriptor, "%s", ignitionJSON)
-		}
+		result, _ = json.MarshalIndent(ignitionCfg, "", "  ")
 	}
+
+	return result
+}
+
+func GetIgnition(cfg *v1_1.Config) string {
+	ignitionBlob := generateIgnition(cfg)
+	return fmt.Sprintf("%s", ignitionBlob)
 }
