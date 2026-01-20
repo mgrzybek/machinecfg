@@ -18,7 +18,9 @@ import (
 )
 
 type HardwareConfigurationArgs struct {
-	Template *string
+	Template                  *string
+	EmbedIgnitionAsVendorData bool
+	EmbeddedIgnitionVariant   *string
 }
 
 // hardwareCmd represents the hardware command
@@ -50,7 +52,7 @@ When device is in offline or planned status, it is deleted.`,
 		ctx := context.Background()
 		client := netbox.NewAPIClientFor(rootArguments.Endpoint, rootArguments.Token)
 
-		hardwares, _ := tinkerbell.CreateHardwares(client, ctx, rootArguments.Filters)
+		hardwares, _ := tinkerbell.CreateHardwares(client, ctx, rootArguments.Filters, hardwareArguments.EmbeddedIgnitionVariant)
 		for _, h := range hardwares {
 			if k8sClient == nil {
 				printYAMLFile(&h, rootArguments, hardwareArguments)
@@ -95,10 +97,12 @@ When device is in offline or planned status, it is deleted.`,
 func init() {
 	tinkerbellCmd.AddCommand(hardwareCmd)
 	hardwareCmd.Flags().String("template", "", "The custom template to use to create Hardwares")
+	hardwareCmd.Flags().Bool("embed-ignition-as-vendor-data", false, "Generates ignition data and write them in .specs.vendorData")
+	hardwareCmd.Flags().String("embedded-ignition-variant", "flatcar", "Provides which ignition variant to produce")
 }
 
 func processHardwareArgs(cmd *cobra.Command) *HardwareConfigurationArgs {
-	var templatePtr *string
+	var templatePtr, embeddedIgnitionVariant *string
 
 	template, _ := cmd.Flags().GetString("template")
 	if len(template) > 0 {
@@ -108,8 +112,16 @@ func processHardwareArgs(cmd *cobra.Command) *HardwareConfigurationArgs {
 		}
 	}
 
+	embedIgnition, _ := cmd.Flags().GetBool("embed-ignition-as-vendor-data")
+	if embedIgnition {
+		buffer, _ := cmd.Flags().GetString("embedded-ignition-variant")
+		embeddedIgnitionVariant = &buffer
+	}
+
 	return &HardwareConfigurationArgs{
-		Template: templatePtr,
+		Template:                  templatePtr,
+		EmbedIgnitionAsVendorData: embedIgnition,
+		EmbeddedIgnitionVariant:   embeddedIgnitionVariant,
 	}
 }
 

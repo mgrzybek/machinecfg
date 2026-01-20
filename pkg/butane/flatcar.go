@@ -23,6 +23,34 @@ type Flatcar struct {
 	Hostname string
 }
 
+func CreateFlatcarIgnition(client *netbox.APIClient, ctx context.Context, deviceID int32) (result string, err error) {
+	var device *netbox.PaginatedDeviceWithConfigContextList
+	var response *http.Response
+
+	device, response, err = client.DcimAPI.DcimDevicesList(ctx).Id([]int32{deviceID}).Execute()
+
+	if err != nil {
+		slog.Error("CreateFlatcar", "error", err.Error(), "message", response.Body)
+		return result, err
+	}
+
+	if device.Count != 1 {
+		slog.Error("CreateFlatcar", "message", "we did not find only one result, this must not be what you expected", "device_id", deviceID, "count", device.Count)
+	}
+
+	butane, err := extractFlatcarData(ctx, client, &device.Results[0])
+	if err != nil {
+		slog.Error("CreateFlatcar", "message", err.Error())
+	}
+	if butane != nil {
+		slog.Info(fmt.Sprintf("%v", butane))
+	}
+
+	result = GetIgnition(butane)
+
+	return result, err
+}
+
 func CreateFlatcars(client *netbox.APIClient, ctx context.Context, filters commonFilters.DeviceFilters) (result []Flatcar, err error) {
 	var devices *netbox.PaginatedDeviceWithConfigContextList
 	var response *http.Response

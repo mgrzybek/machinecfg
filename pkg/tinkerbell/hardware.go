@@ -14,12 +14,13 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
+	"machinecfg/pkg/butane"
 	"machinecfg/pkg/common"
 
 	tinkerbellKubeObjects "github.com/tinkerbell/tink/api/v1alpha1"
 )
 
-func CreateHardwares(client *netbox.APIClient, ctx context.Context, filters common.DeviceFilters) (result []tinkerbellKubeObjects.Hardware, err error) {
+func CreateHardwares(client *netbox.APIClient, ctx context.Context, filters common.DeviceFilters, userDataIgnitionVariant *string) (result []tinkerbellKubeObjects.Hardware, err error) {
 	var devices *netbox.PaginatedDeviceWithConfigContextList
 	var response *http.Response
 
@@ -52,6 +53,17 @@ func CreateHardwares(client *netbox.APIClient, ctx context.Context, filters comm
 			slog.Error("CreateHardwares", "message", err.Error(), "device", *device.Name.Get(), "device_id", device.Id)
 		}
 		if hardware != nil {
+			if userDataIgnitionVariant != nil {
+				if *userDataIgnitionVariant == "flatcar" {
+					ignition, err := butane.CreateFlatcarIgnition(client, ctx, device.GetId())
+					if err == nil {
+						hardware.Spec.VendorData = &ignition
+					}
+				} else {
+					slog.Warn("CreateHardwares", "message", "the given variant is not supported. Skipping vendorData update.", "variant", *userDataIgnitionVariant)
+				}
+			}
+
 			slog.Info(fmt.Sprintf("%v", hardware))
 			result = append(result, *hardware)
 		}
