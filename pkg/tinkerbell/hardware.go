@@ -104,7 +104,6 @@ func PrintExternalYAML(hardware *tinkerbellKubeObjects.Hardware, templatePath st
 }
 
 func extractHardwareData(ctx context.Context, c *netbox.APIClient, device *netbox.DeviceWithConfigContext) (*tinkerbellKubeObjects.Hardware, error) {
-	var namespace string
 	var primaryMacAddress string
 	allowPXE := true
 	allowWorkflow := true
@@ -138,11 +137,46 @@ func extractHardwareData(ctx context.Context, c *netbox.APIClient, device *netbo
 		return nil, err
 	}
 
-	tenant := device.Tenant.Get()
-	if tenant == nil {
-		namespace = "default"
-	} else {
-		namespace = tenant.Name
+	objectMeta := createMetaFromDevice(device)
+
+	hardwareSpec := tinkerbellKubeObjects.HardwareSpec{
+		Interfaces: []tinkerbellKubeObjects.Interface{
+			{
+				DHCP: &tinkerbellKubeObjects.DHCP{
+					MAC:         primaryMacAddress,
+					Hostname:    *device.Name.Get(),
+					NameServers: nameServers,
+					Arch:        device.Platform.Get().Name,
+					UEFI:        true,
+					IP: &tinkerbellKubeObjects.IP{
+						Address: ipAddress,
+						Netmask: netmask,
+						Gateway: gateway,
+					},
+				},
+				DisableDHCP: false,
+				Netboot: &tinkerbellKubeObjects.Netboot{
+					AllowPXE:      &allowPXE,
+					AllowWorkflow: &allowWorkflow,
+				},
+			},
+		},
+		Metadata: &tinkerbellKubeObjects.HardwareMetadata{
+			Instance: &tinkerbellKubeObjects.MetadataInstance{
+				Hostname: *device.Name.Get(),
+				ID:       primaryMacAddress,
+				Ips: []*tinkerbellKubeObjects.MetadataInstanceIP{
+					{
+						Address: ipAddress,
+						Netmask: netmask,
+						Gateway: gateway,
+					},
+				},
+			},
+			Manufacturer: &tinkerbellKubeObjects.MetadataManufacturer{
+				Slug: strings.ToLower(device.DeviceType.Manufacturer.Name),
+			},
+		},
 	}
 
 	return &tinkerbellKubeObjects.Hardware{
@@ -150,64 +184,39 @@ func extractHardwareData(ctx context.Context, c *netbox.APIClient, device *netbo
 			APIVersion: "tinkerbell.org/v1alpha1",
 			Kind:       "Hardware",
 		},
-		ObjectMeta: v1.ObjectMeta{
-			Name:      *device.Name.Get(),
-			Namespace: namespace,
-			Labels: map[string]string{
-				"generated-by": "machinecfg",
-
-				"serial": *device.Serial,
-				"model":  device.DeviceType.Slug,
-				"role":   device.Role.GetName(),
-
-				"site":     device.Site.GetName(),
-				"location": device.Location.Get().GetName(),
-				"racks":    device.Rack.Get().GetName(),
-
-				"tenant": device.Tenant.Get().GetName(),
-				"status": string(device.Status.GetLabel()),
-			},
-		},
-		Spec: tinkerbellKubeObjects.HardwareSpec{
-			Interfaces: []tinkerbellKubeObjects.Interface{
-				{
-					DHCP: &tinkerbellKubeObjects.DHCP{
-						MAC:         primaryMacAddress,
-						Hostname:    *device.Name.Get(),
-						NameServers: nameServers,
-						Arch:        device.Platform.Get().Name,
-						UEFI:        true,
-						IP: &tinkerbellKubeObjects.IP{
-							Address: ipAddress,
-							Netmask: netmask,
-							Gateway: gateway,
-						},
-					},
-					DisableDHCP: false,
-					Netboot: &tinkerbellKubeObjects.Netboot{
-						AllowPXE:      &allowPXE,
-						AllowWorkflow: &allowWorkflow,
-					},
-				},
-			},
-			Metadata: &tinkerbellKubeObjects.HardwareMetadata{
-				Instance: &tinkerbellKubeObjects.MetadataInstance{
-					Hostname: *device.Name.Get(),
-					ID:       primaryMacAddress,
-					Ips: []*tinkerbellKubeObjects.MetadataInstanceIP{
-						{
-							Address: ipAddress,
-							Netmask: netmask,
-							Gateway: gateway,
-						},
-					},
-				},
-				Manufacturer: &tinkerbellKubeObjects.MetadataManufacturer{
-					Slug: strings.ToLower(device.DeviceType.Manufacturer.Name),
-				},
-			},
-		},
+		ObjectMeta: objectMeta,
+		Spec:       hardwareSpec,
 	}, nil
+}
+
+func createMetaFromDevice(device *netbox.DeviceWithConfigContext) v1.ObjectMeta {
+	var namespace string
+
+	tenant := device.Tenant.Get()
+	if tenant == nil {
+		namespace = "default"
+	} else {
+		namespace = tenant.Name
+	}
+
+	return v1.ObjectMeta{
+		Name:      *device.Name.Get(),
+		Namespace: namespace,
+		Labels: map[string]string{
+			"generated-by": "machinecfg",
+
+			"serial": *device.Serial,
+			"model":  device.DeviceType.Slug,
+			"role":   device.Role.GetName(),
+
+			"site":     device.Site.GetName(),
+			"location": device.Location.Get().GetName(),
+			"racks":    device.Rack.Get().GetName(),
+
+			"tenant": device.Tenant.Get().GetName(),
+			"status": string(device.Status.GetLabel()),
+		},
+	}
 }
 
 func getAddrFromCIDR(cidr string) string {
