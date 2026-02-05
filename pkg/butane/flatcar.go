@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"strings"
 
 	"github.com/coreos/butane/base/v0_5"
 	"github.com/coreos/butane/config/common"
@@ -46,7 +45,7 @@ func CreateFlatcarIgnition(client *netbox.APIClient, ctx context.Context, device
 		slog.Info(fmt.Sprintf("%v", butane))
 	}
 
-	result = GetIgnition(butane)
+	result = GetFlatcarIgnition(butane)
 
 	return result, err
 }
@@ -129,17 +128,7 @@ func extractFlatcarData(ctx context.Context, c *netbox.APIClient, device *netbox
 		}
 	}
 
-	dcimFile := fmt.Sprintf(
-		"---\ngenerated-by: machinecfg\nserial: %s\nmodel: %s\nrole: %s\nsite: %s\nlocation: %s\nracks: %s\ntenant: %s\nstatus: %s",
-		*device.Serial,
-		device.DeviceType.Slug,
-		device.Role.GetName(),
-		device.Site.GetName(),
-		device.Location.Get().GetName(),
-		device.Rack.Get().GetName(),
-		device.Tenant.Get().GetName(),
-		device.Status.GetLabel(),
-	)
+	dcimFile := createDCIMFile(device)
 
 	files = append(files, v0_5.File{Path: "/etc/dcim.yaml", Contents: v0_5.Resource{Inline: &dcimFile}})
 	files = append(files, v0_5.File{Path: "/etc/hostname", Contents: v0_5.Resource{Inline: device.Name.Get()}})
@@ -152,16 +141,6 @@ func extractFlatcarData(ctx context.Context, c *netbox.APIClient, device *netbox
 			Storage: v0_5.Storage{Files: files},
 		},
 	}, nil
-}
-
-func hasDHCPTag(tags []netbox.NestedTag) (answer bool) {
-	for _, tag := range tags {
-		if strings.ToLower(tag.GetName()) == "dhcp" {
-			answer = true
-		}
-	}
-
-	return answer
 }
 
 func appendNetworkFileForIface(ctx *context.Context, client *netbox.APIClient, files []v0_5.File, iface *netbox.Interface, ipAddr *netbox.IPAddress) []v0_5.File {
@@ -195,40 +174,6 @@ func appendNetworkFileForIface(ctx *context.Context, client *netbox.APIClient, f
 	})
 
 	return files
-}
-
-func getTaggedAddressesFromPrefixOfAddr(ctx *context.Context, client *netbox.APIClient, tag string, addr *netbox.IPAddress) (result []netbox.IPAddress) {
-	prefixes, response, err := client.IpamAPI.IpamPrefixesList(*ctx).Contains(addr.Address).Execute()
-
-	if err != nil {
-		slog.Error("getTaggedAddressesFromPrefixOfAddr", "message", err.Error())
-	}
-
-	if response.StatusCode != 200 {
-		slog.Error("getTaggedAddressesFromPrefixOfAddr", "message", response.Body, "code", response.StatusCode)
-	}
-
-	if prefixes.Count == 0 {
-		slog.Warn("getTaggedAddressesFromPrefixOfAddr", "message", "No prefix found. This should not happen", "ipAddress", addr.Address)
-	} else {
-		prefix := prefixes.Results[0]
-
-		addresses, _, err := client.IpamAPI.IpamIpAddressesList(*ctx).Parent([]string{prefix.Display}).Tag([]string{tag}).Execute()
-
-		if err != nil {
-			slog.Warn("getTaggedAddressesFromPrefixOfAddr", "message", err.Error())
-		} else {
-			if addresses.Count == 0 {
-				slog.Warn("getTaggedAddressesFromPrefixOfAddr", "message", "No address found with the requested tag. This should not happen", "prefix_id", prefix.Id, "prefix", prefix.Display, "tag", tag)
-			}
-
-			for _, address := range addresses.Results {
-				result = append(result, address)
-			}
-		}
-	}
-
-	return result
 }
 
 func appendNetworkFileForVlan(ctx *context.Context, client *netbox.APIClient, files []v0_5.File, vlanID int32, ipAddr *netbox.IPAddress) []v0_5.File {
@@ -265,25 +210,15 @@ func appendNetdevFile(files []v0_5.File, vlanID int32) []v0_5.File {
 	return files
 }
 
-func isVlanIDinVlanList(vlanID int32, vlans []netbox.VLAN) (result bool) {
-	for _, v := range vlans {
-		if v.Vid == vlanID {
-			result = true
-		}
-	}
-
-	return result
-}
-
 func PrintIgnitionFile(cfg *v1_1.Config, fileDescriptor *os.File) {
-	ignitionBlob := generateIgnition(cfg)
+	ignitionBlob := generateFlatcarIgnition(cfg)
 	fmt.Fprintf(fileDescriptor, "%s", ignitionBlob)
 }
 
-func generateIgnition(cfg *v1_1.Config) (result []byte) {
+func generateFlatcarIgnition(cfg *v1_1.Config) (result []byte) {
 	ignitionCfg, report, err := cfg.ToIgn3_4(common.TranslateOptions{})
 	if err != nil {
-		slog.Error("GetIgnitionFile", "message", err.Error(), "report", report.String())
+		slog.Error("generateFlatcarIgnition", "message", err.Error(), "report", report.String())
 	} else {
 		result, _ = json.MarshalIndent(ignitionCfg, "", "  ")
 	}
@@ -291,7 +226,7 @@ func generateIgnition(cfg *v1_1.Config) (result []byte) {
 	return result
 }
 
-func GetIgnition(cfg *v1_1.Config) string {
-	ignitionBlob := generateIgnition(cfg)
+func GetFlatcarIgnition(cfg *v1_1.Config) string {
+	ignitionBlob := generateFlatcarIgnition(cfg)
 	return fmt.Sprintf("%s", ignitionBlob)
 }
