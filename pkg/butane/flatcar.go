@@ -109,22 +109,20 @@ func extractFlatcarData(ctx context.Context, c *netbox.APIClient, device *netbox
 			return nil, err
 		}
 
-		if !hasDHCPTag(iface.Tags) {
-			for _, ipAddr := range ipAddresses.Results {
-				var vlanID int32
+		for _, ipAddr := range ipAddresses.Results {
+			var vlanID int32
 
-				prefix, _, err := c.IpamAPI.IpamPrefixesList(ctx).Contains(ipAddr.Address).Execute()
-				if err != nil {
-					slog.Error("extractFlatcarData", "message", err.Error())
-				} else {
-					if prefix.Count > 0 {
-						vlanID = prefix.Results[0].Vlan.Get().Vid
-						if isVlanIDinVlanList(vlanID, iface.TaggedVlans) {
-							files = appendNetdevFile(files, vlanID)
-							files = appendNetworkFileForVlan(files, vlanID, &ipAddr)
-						} else {
-							files = appendNetworkFileForIface(files, &iface, &ipAddr)
-						}
+			prefix, _, err := c.IpamAPI.IpamPrefixesList(ctx).Contains(ipAddr.Address).Execute()
+			if err != nil {
+				slog.Error("extractFlatcarData", "message", err.Error())
+			} else {
+				if prefix.Count > 0 {
+					vlanID = prefix.Results[0].Vlan.Get().Vid
+					if isVlanIDinVlanList(vlanID, iface.TaggedVlans) {
+						files = appendNetdevFile(files, vlanID)
+						files = appendNetworkFileForVlan(&ctx, c, files, vlanID, &ipAddr)
+					} else {
+						files = appendNetworkFileForIface(&ctx, c, files, &iface, &ipAddr)
 					}
 				}
 			}
@@ -166,13 +164,29 @@ func hasDHCPTag(tags []netbox.NestedTag) (answer bool) {
 	return answer
 }
 
-func appendNetworkFileForIface(files []v0_5.File, iface *netbox.Interface, ipAddr *netbox.IPAddress) []v0_5.File {
+func appendNetworkFileForIface(ctx *context.Context, client *netbox.APIClient, files []v0_5.File, iface *netbox.Interface, ipAddr *netbox.IPAddress) []v0_5.File {
 	var content string
 
+	content = fmt.Sprintf("[Match]\nName=%s\n", iface.Name)
+
 	if iface.MacAddress.Get() != nil {
-		content = fmt.Sprintf("[Match]\nName=%s\nMACAddress=%s\n[Network]\nDHCP=no\nAddress=%s\nGateway=192.168.1.1\nDNS=8.8.8.8", iface.Name, *iface.MacAddress.Get(), ipAddr.Address)
+		content = fmt.Sprintf("%sMACAddress=%s\n", content, *iface.MacAddress.Get())
+	}
+
+	if hasDHCPTag(ipAddr.GetTags()) {
+		content = fmt.Sprintf("%s\n[Network]\nDHCP=yes\n", content)
 	} else {
-		content = fmt.Sprintf("[Match]\nName=%s\n[Network]\nDHCP=no\nAddress=%s\nGateway=192.168.1.1\nDNS=8.8.8.8", iface.Name, ipAddr.Address)
+		content = fmt.Sprintf("%s\n[Network]\nDHCP=no\n", content)
+
+		gatewayAddresses := getTaggedAddressesFromPrefixOfAddr(ctx, client, "gateway", ipAddr)
+		for _, addr := range gatewayAddresses {
+			content = fmt.Sprintf("%s\nGateway=%s\n", content, addr)
+		}
+
+		dnsAddresses := getTaggedAddressesFromPrefixOfAddr(ctx, client, "dns", ipAddr)
+		for _, addr := range dnsAddresses {
+			content = fmt.Sprintf("%s\nDNS=%s\n", content, addr)
+		}
 	}
 
 	files = append(files, v0_5.File{
@@ -183,8 +197,54 @@ func appendNetworkFileForIface(files []v0_5.File, iface *netbox.Interface, ipAdd
 	return files
 }
 
-func appendNetworkFileForVlan(files []v0_5.File, vlanID int32, ipAddr *netbox.IPAddress) []v0_5.File {
-	content := fmt.Sprintf("[Match]\nName=%v\n[Network]\nDHCP=no\nAddress=%s\nGateway=192.168.1.1\nDNS=8.8.8.8", vlanID, ipAddr.Address)
+func getTaggedAddressesFromPrefixOfAddr(ctx *context.Context, client *netbox.APIClient, tag string, addr *netbox.IPAddress) (result []netbox.IPAddress) {
+	prefixes, response, err := client.IpamAPI.IpamPrefixesList(*ctx).Contains(addr.Address).Execute()
+
+	if err != nil {
+		slog.Error("getTaggedAddressesFromPrefixOfAddr", "message", err.Error())
+	}
+
+	if response.StatusCode != 200 {
+		slog.Error("getTaggedAddressesFromPrefixOfAddr", "message", response.Body, "code", response.StatusCode)
+	}
+
+	if prefixes.Count == 0 {
+		slog.Warn("getTaggedAddressesFromPrefixOfAddr", "message", "No prefix found. This should not happen", "ipAddress", addr.Address)
+	} else {
+		prefix := prefixes.Results[0]
+
+		addresses, _, err := client.IpamAPI.IpamIpAddressesList(*ctx).Parent([]string{prefix.Display}).Tag([]string{tag}).Execute()
+
+		if err != nil {
+			slog.Warn("getTaggedAddressesFromPrefixOfAddr", "message", err.Error())
+		} else {
+			if addresses.Count == 0 {
+				slog.Warn("getTaggedAddressesFromPrefixOfAddr", "message", "No address found with the requested tag. This should not happen", "prefix_id", prefix.Id, "prefix", prefix.Display, "tag", tag)
+			}
+
+			for _, address := range addresses.Results {
+				result = append(result, address)
+			}
+		}
+	}
+
+	return result
+}
+
+func appendNetworkFileForVlan(ctx *context.Context, client *netbox.APIClient, files []v0_5.File, vlanID int32, ipAddr *netbox.IPAddress) []v0_5.File {
+	var content string
+
+	content = fmt.Sprintf("[Match]\nName=%v\n[Network]\nDHCP=no\nAddress=%s\n", vlanID, ipAddr.Address)
+
+	gatewayAddresses := getTaggedAddressesFromPrefixOfAddr(ctx, client, "gateway", ipAddr)
+	for _, addr := range gatewayAddresses {
+		content = fmt.Sprintf("%s\nGateway=%s", content, addr.Address)
+	}
+
+	dnsAddresses := getTaggedAddressesFromPrefixOfAddr(ctx, client, "dns", ipAddr)
+	for _, addr := range dnsAddresses {
+		content = fmt.Sprintf("%s\nDNS=%s", content, addr.Address)
+	}
 
 	files = append(files, v0_5.File{
 		Path:     fmt.Sprintf("/etc/systemd/network/01-vlan-%v.network", vlanID),
