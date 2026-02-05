@@ -1,9 +1,17 @@
 version: 3
 tasks:
+  default:
+    desc: Build everything
+    cmds:
+    - task: cli
+
   cli:
+    desc: Build the CLI binary
     cmds:
     - cd cli && go build -o ../machinecfg
+
   test:
+    desc: Run tests
     vars:
       root_opts: --sites=maison --roles=cattle
       netbox_opts: --netbox-endpoint=$NETBOX_ENDPOINT --netbox-token=$NETBOX_TOKEN
@@ -15,4 +23,5 @@ tasks:
     - ./machinecfg {{.root_opts}} talos machineconfig {{.netbox_opts}} {{.output_opts}}
 
   clean-tmp:
+    desc: Remove temporary files
     cmd: rm -rf tmp/*
