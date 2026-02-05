@@ -4,20 +4,17 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net/http"
 	"os"
 	"strings"
 
 	"github.com/netbox-community/go-netbox/v4"
 
 	"github.com/siderolabs/talos/pkg/machinery/config/config"
-	//"github.com/siderolabs/talos/pkg/machinery/config/machine"
-	//"github.com/siderolabs/talos/pkg/machinery/config/types/network"
 	v1alpha1 "github.com/siderolabs/talos/pkg/machinery/config/types/v1alpha1"
 
 	"gopkg.in/yaml.v3"
 
-	commonFilters "machinecfg/pkg/common"
+	commonMachinecfg "machinecfg/pkg/common"
 )
 
 type Talos struct {
@@ -25,28 +22,11 @@ type Talos struct {
 	Hostname string
 }
 
-func CreateTalosConfigs(client *netbox.APIClient, ctx context.Context, filters commonFilters.DeviceFilters) (result []Talos, err error) {
+func CreateTalosConfigs(client *netbox.APIClient, ctx context.Context, filters commonMachinecfg.DeviceFilters) (result []Talos, err error) {
 	var devices *netbox.PaginatedDeviceWithConfigContextList
-	var response *http.Response
 
-	switch {
-	case len(filters.Tenants) > 0 && filters.Tenants[0] != "" && len(filters.Locations) > 0 && filters.Locations[0] != "":
-		slog.Info("CreateTalosConfigs", "message", "tenants+locations", "tenants", len(filters.Tenants), "locations", len(filters.Locations))
-		devices, response, err = client.DcimAPI.DcimDevicesList(ctx).HasPrimaryIp(true).Status([]string{"active"}).Site(filters.Sites).Location(filters.Locations).Tenant(filters.Tenants).Role(filters.Roles).Execute()
-	case len(filters.Tenants) > 0 && filters.Tenants[0] != "":
-		slog.Info("CreateTalosConfigs", "message", "tenants")
-		devices, response, err = client.DcimAPI.DcimDevicesList(ctx).HasPrimaryIp(true).Status([]string{"active"}).Site(filters.Sites).Tenant(filters.Tenants).Role(filters.Roles).Execute()
-	case len(filters.Locations) > 0 && filters.Locations[0] != "":
-		slog.Info("CreateTalosConfigs", "message", "locations")
-		devices, response, err = client.DcimAPI.DcimDevicesList(ctx).HasPrimaryIp(true).Status([]string{"active"}).Site(filters.Sites).Location(filters.Locations).Role(filters.Roles).Execute()
-	default:
-		devices, response, err = client.DcimAPI.DcimDevicesList(ctx).HasPrimaryIp(true).Status([]string{"active"}).Site(filters.Sites).Role(filters.Roles).Execute()
-	}
-
-	if err != nil {
-		slog.Error("CreateTalosConfigs", "error", err.Error(), "message", response.Body)
-		return result, err
-	}
+	filters.Status = []string{"active"}
+	devices, err = commonMachinecfg.GetDevices(&ctx, client, filters)
 
 	if devices.Count == 0 {
 		slog.Warn("CreateTalosConfigs", "message", "no device found, this must not be what you expected")

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
-	"net/http"
 	"os"
 	"strings"
 	"text/template"
@@ -18,30 +17,15 @@ import (
 	"machinecfg/pkg/common"
 
 	tinkerbellKubeObjects "github.com/tinkerbell/tink/api/v1alpha1"
+
+	commonMachinecfg "machinecfg/pkg/common"
 )
 
 func CreateHardwares(client *netbox.APIClient, ctx context.Context, filters common.DeviceFilters, userDataIgnitionVariant *string) (result []tinkerbellKubeObjects.Hardware, err error) {
 	var devices *netbox.PaginatedDeviceWithConfigContextList
-	var response *http.Response
 
-	switch {
-	case len(filters.Tenants) > 0 && filters.Tenants[0] != "" && len(filters.Locations) > 0 && filters.Locations[0] != "":
-		slog.Info("CreateHardwares", "message", "tenants+locations", "tenants", len(filters.Tenants), "locations", len(filters.Locations))
-		devices, response, err = client.DcimAPI.DcimDevicesList(ctx).HasPrimaryIp(true).Status([]string{"staged"}).Site(filters.Sites).Location(filters.Locations).Tenant(filters.Tenants).Role(filters.Roles).Execute()
-	case len(filters.Tenants) > 0 && filters.Tenants[0] != "":
-		slog.Info("CreateHardwares", "message", "tenants")
-		devices, response, err = client.DcimAPI.DcimDevicesList(ctx).HasPrimaryIp(true).Status([]string{"staged"}).Site(filters.Sites).Tenant(filters.Tenants).Role(filters.Roles).Execute()
-	case len(filters.Locations) > 0 && filters.Locations[0] != "":
-		slog.Info("CreateHardwares", "message", "locations")
-		devices, response, err = client.DcimAPI.DcimDevicesList(ctx).HasPrimaryIp(true).Status([]string{"staged"}).Site(filters.Sites).Location(filters.Locations).Role(filters.Roles).Execute()
-	default:
-		devices, response, err = client.DcimAPI.DcimDevicesList(ctx).HasPrimaryIp(true).Status([]string{"staged"}).Site(filters.Sites).Role(filters.Roles).Execute()
-	}
-
-	if err != nil {
-		slog.Error("CreateHadwares", "error", err.Error(), "message", response.Body)
-		return result, err
-	}
+	filters.Status = []string{"staged"}
+	devices, err = commonMachinecfg.GetDevices(&ctx, client, filters)
 
 	if devices.Count == 0 {
 		slog.Warn("CreateHardwares", "message", "no device found, this must not be what you expected")
@@ -255,26 +239,9 @@ func cidrToNetmask(cidr string) (string, error) {
 
 func CreateHardwaresToPrune(client *netbox.APIClient, ctx context.Context, filters common.DeviceFilters) (result []tinkerbellKubeObjects.Hardware, err error) {
 	var devices *netbox.PaginatedDeviceWithConfigContextList
-	var response *http.Response
 
-	switch {
-	case len(filters.Tenants) > 0 && filters.Tenants[0] != "" && len(filters.Locations) > 0 && filters.Locations[0] != "":
-		slog.Info("CreateHardwaresToPrune", "message", "tenants+locations", "tenants", len(filters.Tenants), "locations", len(filters.Locations))
-		devices, response, err = client.DcimAPI.DcimDevicesList(ctx).HasPrimaryIp(true).Status([]string{"offline", "planned"}).Site(filters.Sites).Location(filters.Locations).Tenant(filters.Tenants).Role(filters.Roles).Execute()
-	case len(filters.Tenants) > 0 && filters.Tenants[0] != "":
-		slog.Info("CreateHardwaresToPrune", "message", "tenants")
-		devices, response, err = client.DcimAPI.DcimDevicesList(ctx).HasPrimaryIp(true).Status([]string{"offline", "planned"}).Site(filters.Sites).Tenant(filters.Tenants).Role(filters.Roles).Execute()
-	case len(filters.Locations) > 0 && filters.Locations[0] != "":
-		slog.Info("CreateHardwaresToPrune", "message", "locations")
-		devices, response, err = client.DcimAPI.DcimDevicesList(ctx).HasPrimaryIp(true).Status([]string{"offline", "planned"}).Site(filters.Sites).Location(filters.Locations).Role(filters.Roles).Execute()
-	default:
-		devices, response, err = client.DcimAPI.DcimDevicesList(ctx).HasPrimaryIp(true).Status([]string{"offline", "planned"}).Site(filters.Sites).Role(filters.Roles).Execute()
-	}
-
-	if err != nil {
-		slog.Error("CreateHadwaresToPrune", "error", err.Error(), "message", response.Body)
-		return result, err
-	}
+	filters.Status = []string{"offline", "planned"}
+	devices, err = commonMachinecfg.GetDevices(&ctx, client, filters)
 
 	if devices.Count == 0 {
 		slog.Warn("CreateHardwaresToPrune", "message", "no device found, this must not be what you expected")

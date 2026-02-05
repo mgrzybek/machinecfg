@@ -12,6 +12,7 @@ tasks:
 
   test:
     desc: Run tests
+    deps: [ "cli" ]
     vars:
       root_opts: --sites=maison --roles=cattle
       netbox_opts: --netbox-endpoint=$NETBOX_ENDPOINT --netbox-token=$NETBOX_TOKEN

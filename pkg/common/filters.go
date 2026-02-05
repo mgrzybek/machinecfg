@@ -10,4 +10,6 @@ type DeviceFilters struct {
 
 	Virtualisation bool
 	Clusters       []string
+
+	Status []string
 }

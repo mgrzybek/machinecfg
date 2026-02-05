@@ -14,7 +14,7 @@ import (
 
 	"github.com/netbox-community/go-netbox/v4"
 
-	commonFilters "machinecfg/pkg/common"
+	commonMachinecfg "machinecfg/pkg/common"
 )
 
 type Flatcar struct {
@@ -50,28 +50,11 @@ func CreateFlatcarIgnition(client *netbox.APIClient, ctx context.Context, device
 	return result, err
 }
 
-func CreateFlatcars(client *netbox.APIClient, ctx context.Context, filters commonFilters.DeviceFilters) (result []Flatcar, err error) {
+func CreateFlatcars(client *netbox.APIClient, ctx context.Context, filters commonMachinecfg.DeviceFilters) (result []Flatcar, err error) {
 	var devices *netbox.PaginatedDeviceWithConfigContextList
-	var response *http.Response
 
-	switch {
-	case len(filters.Tenants) > 0 && filters.Tenants[0] != "" && len(filters.Locations) > 0 && filters.Locations[0] != "":
-		slog.Info("CreateFlatcars", "message", "tenants+locations", "tenants", len(filters.Tenants), "locations", len(filters.Locations))
-		devices, response, err = client.DcimAPI.DcimDevicesList(ctx).HasPrimaryIp(true).Status([]string{"staged"}).Site(filters.Sites).Location(filters.Locations).Tenant(filters.Tenants).Role(filters.Roles).Execute()
-	case len(filters.Tenants) > 0 && filters.Tenants[0] != "":
-		slog.Info("CreateFlatcars", "message", "tenants")
-		devices, response, err = client.DcimAPI.DcimDevicesList(ctx).HasPrimaryIp(true).Status([]string{"staged"}).Site(filters.Sites).Tenant(filters.Tenants).Role(filters.Roles).Execute()
-	case len(filters.Locations) > 0 && filters.Locations[0] != "":
-		slog.Info("CreateFlatcars", "message", "locations")
-		devices, response, err = client.DcimAPI.DcimDevicesList(ctx).HasPrimaryIp(true).Status([]string{"staged"}).Site(filters.Sites).Location(filters.Locations).Role(filters.Roles).Execute()
-	default:
-		devices, response, err = client.DcimAPI.DcimDevicesList(ctx).HasPrimaryIp(true).Status([]string{"staged"}).Site(filters.Sites).Role(filters.Roles).Execute()
-	}
-
-	if err != nil {
-		slog.Error("CreateFlatcars", "error", err.Error(), "message", response.Body)
-		return result, err
-	}
+	filters.Status = []string{"staged"}
+	devices, err = commonMachinecfg.GetDevices(&ctx, client, filters)
 
 	if devices.Count == 0 {
 		slog.Warn("CreateFlatcars", "message", "no device found, this must not be what you expected")
