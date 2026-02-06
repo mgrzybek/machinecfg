@@ -112,9 +112,17 @@ func extractHardwareData(ctx context.Context, c *netbox.APIClient, device *netbo
 		primaryMacAddress = strings.ToLower(primaryMacAddress)
 	}
 
-	// TODO: Get gateway and DNS from somewhere
-	gateway := "192.168.1.1"
-	nameServers := []string{"1.1.1.1", "8.8.8.8"}
+	deviceIP := netbox.IPAddress{
+		Address: device.PrimaryIp4.Get().Address,
+		Display: device.PrimaryIp.Get().Display,
+		Url:     device.PrimaryIp4.Get().Url,
+	}
+
+	gatewaysNetbox := commonMachinecfg.GetTaggedAddressesFromPrefixOfAddr(&ctx, c, "gateway", &deviceIP)
+	gateways := commonMachinecfg.FromIPAddressesToStrings(gatewaysNetbox)
+
+	nameServersNetbox := commonMachinecfg.GetTaggedAddressesFromPrefixOfAddr(&ctx, c, "dns", &deviceIP)
+	nameServers := commonMachinecfg.FromIPAddressesToStrings(nameServersNetbox)
 
 	netmask, err := cidrToNetmask(device.PrimaryIp.Get().Address)
 	if err != nil {
@@ -135,7 +143,7 @@ func extractHardwareData(ctx context.Context, c *netbox.APIClient, device *netbo
 					IP: &tinkerbellKubeObjects.IP{
 						Address: ipAddress,
 						Netmask: netmask,
-						Gateway: gateway,
+						Gateway: strings.Join(gateways, ""),
 					},
 				},
 				DisableDHCP: false,
@@ -153,7 +161,7 @@ func extractHardwareData(ctx context.Context, c *netbox.APIClient, device *netbo
 					{
 						Address: ipAddress,
 						Netmask: netmask,
-						Gateway: gateway,
+						Gateway: strings.Join(gateways, ""),
 					},
 				},
 			},

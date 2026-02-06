@@ -140,12 +140,12 @@ func appendNetworkFileForIface(ctx *context.Context, client *netbox.APIClient, f
 	} else {
 		content = fmt.Sprintf("%s\n[Network]\nDHCP=no\n", content)
 
-		gatewayAddresses := getTaggedAddressesFromPrefixOfAddr(ctx, client, "gateway", ipAddr)
+		gatewayAddresses := commonMachinecfg.GetTaggedAddressesFromPrefixOfAddr(ctx, client, "gateway", ipAddr)
 		for _, addr := range gatewayAddresses {
 			content = fmt.Sprintf("%s\nGateway=%s\n", content, addr)
 		}
 
-		dnsAddresses := getTaggedAddressesFromPrefixOfAddr(ctx, client, "dns", ipAddr)
+		dnsAddresses := commonMachinecfg.GetTaggedAddressesFromPrefixOfAddr(ctx, client, "dns", ipAddr)
 		for _, addr := range dnsAddresses {
 			content = fmt.Sprintf("%s\nDNS=%s\n", content, addr)
 		}
@@ -164,12 +164,12 @@ func appendNetworkFileForVlan(ctx *context.Context, client *netbox.APIClient, fi
 
 	content = fmt.Sprintf("[Match]\nName=%v\n[Network]\nDHCP=no\nAddress=%s\n", vlanID, ipAddr.Address)
 
-	gatewayAddresses := getTaggedAddressesFromPrefixOfAddr(ctx, client, "gateway", ipAddr)
+	gatewayAddresses := commonMachinecfg.GetTaggedAddressesFromPrefixOfAddr(ctx, client, "gateway", ipAddr)
 	for _, addr := range gatewayAddresses {
 		content = fmt.Sprintf("%s\nGateway=%s", content, addr.Address)
 	}
 
-	dnsAddresses := getTaggedAddressesFromPrefixOfAddr(ctx, client, "dns", ipAddr)
+	dnsAddresses := commonMachinecfg.GetTaggedAddressesFromPrefixOfAddr(ctx, client, "dns", ipAddr)
 	for _, addr := range dnsAddresses {
 		content = fmt.Sprintf("%s\nDNS=%s", content, addr.Address)
 	}
