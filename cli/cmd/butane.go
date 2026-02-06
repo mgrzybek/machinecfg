@@ -9,9 +9,10 @@ import (
 
 // butaneCmd represents the butane command
 var butaneCmd = &cobra.Command{
-	Use:   "butane",
-	Short: "Manage butane / ignition configurations",
-	Long:  ``,
+	Use:     "butane",
+	Aliases: []string{"ignition"},
+	Short:   "Manage butane / ignition configurations",
+	Long:    ``,
 }
 
 func init() {
