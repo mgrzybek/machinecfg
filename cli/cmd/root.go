@@ -80,7 +80,7 @@ func configureLogger(cmd *cobra.Command) {
 	}
 }
 
-func processRootArgs(cmd *cobra.Command) *ConfigurationArgs {
+func processRootArgs(cmd *cobra.Command, requireOutputDirectory bool) *ConfigurationArgs {
 	fatalError := false
 	endpoint, _ := cmd.Flags().GetString("netbox-endpoint")
 	token, _ := cmd.Flags().GetString("netbox-token")
@@ -105,9 +105,11 @@ func processRootArgs(cmd *cobra.Command) *ConfigurationArgs {
 		fatalError = true
 	}
 
-	if len(outputDirectory) == 0 {
-		slog.Error("output-directory must be given")
-		fatalError = true
+	if requireOutputDirectory {
+		if len(outputDirectory) == 0 {
+			slog.Error("output-directory must be given")
+			fatalError = true
+		}
 	}
 
 	/*

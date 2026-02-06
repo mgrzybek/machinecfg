@@ -21,7 +21,7 @@ var machineconfigCmd = &cobra.Command{
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		configureLogger(cmd)
-		rootArguments := processRootArgs(cmd)
+		rootArguments := processRootArgs(cmd, true)
 
 		ctx := context.Background()
 		client := netbox.NewAPIClientFor(rootArguments.Endpoint, rootArguments.Token)

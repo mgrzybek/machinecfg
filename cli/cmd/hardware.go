@@ -38,7 +38,7 @@ When device is in offline or planned status, it is deleted.`,
 		var failureCounter int
 
 		configureLogger(cmd)
-		rootArguments := processRootArgs(cmd)
+		rootArguments := processRootArgs(cmd, false)
 		hardwareArguments := processHardwareArgs(cmd)
 
 		k8sClient, err := getK8sClient()
