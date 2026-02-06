@@ -30,21 +30,21 @@ func CreateTalosConfigs(client *netbox.APIClient, ctx context.Context, filters c
 
 	if devices.Count == 0 {
 		slog.Warn("CreateTalosConfigs", "message", "no device found, this must not be what you expected")
-	}
-
-	for _, device := range devices.Results {
-		talos, err := extractTalosData(ctx, client, &device)
-		if err != nil {
-			slog.Error("createHardwares", "message", err.Error())
-		}
-		if talos != nil {
-			slog.Info(fmt.Sprintf("%v", talos))
-			item := Talos{
-				Config:   talos,
-				Hostname: device.GetName(),
+	} else {
+		for _, device := range devices.Results {
+			talos, err := extractTalosData(ctx, client, &device)
+			if err != nil {
+				slog.Error("createHardwares", "message", err.Error())
 			}
-			result = append(result, item)
+			if talos != nil {
+				slog.Info(fmt.Sprintf("%v", talos))
+				item := Talos{
+					Config:   talos,
+					Hostname: device.GetName(),
+				}
+				result = append(result, item)
 
+			}
 		}
 	}
 
