@@ -98,7 +98,7 @@ func init() {
 	tinkerbellCmd.AddCommand(hardwareCmd)
 	hardwareCmd.Flags().String("template", "", "The custom template to use to create Hardwares")
 	hardwareCmd.Flags().Bool("embed-ignition-as-vendor-data", false, "Generates ignition data and write them in .specs.vendorData")
-	hardwareCmd.Flags().String("embedded-ignition-variant", "flatcar", "Provides which ignition variant to produce")
+	hardwareCmd.Flags().String("embedded-ignition-variant", "flatcar", "Provides which ignition variant to produce ('fcos' or 'flatcar')")
 }
 
 func processHardwareArgs(cmd *cobra.Command) *HardwareConfigurationArgs {

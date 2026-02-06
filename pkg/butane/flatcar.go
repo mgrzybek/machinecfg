@@ -101,10 +101,10 @@ func extractFlatcarData(ctx context.Context, c *netbox.APIClient, device *netbox
 				if prefix.Count > 0 {
 					vlanID = prefix.Results[0].Vlan.Get().Vid
 					if isVlanIDinVlanList(vlanID, iface.TaggedVlans) {
-						files = appendNetdevFile(files, vlanID)
-						files = appendNetworkFileForVlan(&ctx, c, files, vlanID, &ipAddr)
+						files = appendSystemdNetdevFile(files, vlanID)
+						files = appendSystemdNetworkFileForVlan(&ctx, c, files, vlanID, &ipAddr)
 					} else {
-						files = appendNetworkFileForIface(&ctx, c, files, &iface, &ipAddr)
+						files = appendSystemdNetworkFileForIface(&ctx, c, files, &iface, &ipAddr)
 					}
 				}
 			}
@@ -126,7 +126,7 @@ func extractFlatcarData(ctx context.Context, c *netbox.APIClient, device *netbox
 	}, nil
 }
 
-func appendNetworkFileForIface(ctx *context.Context, client *netbox.APIClient, files []v0_5.File, iface *netbox.Interface, ipAddr *netbox.IPAddress) []v0_5.File {
+func appendSystemdNetworkFileForIface(ctx *context.Context, client *netbox.APIClient, files []v0_5.File, iface *netbox.Interface, ipAddr *netbox.IPAddress) []v0_5.File {
 	var content string
 
 	content = fmt.Sprintf("[Match]\nName=%s\n", iface.Name)
@@ -159,7 +159,7 @@ func appendNetworkFileForIface(ctx *context.Context, client *netbox.APIClient, f
 	return files
 }
 
-func appendNetworkFileForVlan(ctx *context.Context, client *netbox.APIClient, files []v0_5.File, vlanID int32, ipAddr *netbox.IPAddress) []v0_5.File {
+func appendSystemdNetworkFileForVlan(ctx *context.Context, client *netbox.APIClient, files []v0_5.File, vlanID int32, ipAddr *netbox.IPAddress) []v0_5.File {
 	var content string
 
 	content = fmt.Sprintf("[Match]\nName=%v\n[Network]\nDHCP=no\nAddress=%s\n", vlanID, ipAddr.Address)
@@ -182,7 +182,7 @@ func appendNetworkFileForVlan(ctx *context.Context, client *netbox.APIClient, fi
 	return files
 }
 
-func appendNetdevFile(files []v0_5.File, vlanID int32) []v0_5.File {
+func appendSystemdNetdevFile(files []v0_5.File, vlanID int32) []v0_5.File {
 	content := fmt.Sprintf("[NetDev]\nName=%v\nKind=vlan\n[VLAN]\nId=%v", vlanID, vlanID)
 
 	files = append(files, v0_5.File{
@@ -193,7 +193,7 @@ func appendNetdevFile(files []v0_5.File, vlanID int32) []v0_5.File {
 	return files
 }
 
-func PrintIgnitionFile(cfg *v1_1.Config, fileDescriptor *os.File) {
+func PrintFlatcarIgnitionFile(cfg *v1_1.Config, fileDescriptor *os.File) {
 	ignitionBlob := generateFlatcarIgnition(cfg)
 	fmt.Fprintf(fileDescriptor, "%s", ignitionBlob)
 }

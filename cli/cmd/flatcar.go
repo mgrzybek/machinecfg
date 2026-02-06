@@ -41,7 +41,7 @@ var flatcarCmd = &cobra.Command{
 			if err != nil {
 				slog.Error("flatcarCmd", "message", err.Error())
 			} else {
-				butane.PrintIgnitionFile(&f.Config, outputFileDescriptor)
+				butane.PrintFlatcarIgnitionFile(&f.Config, outputFileDescriptor)
 			}
 		}
 	},

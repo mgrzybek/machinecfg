@@ -38,12 +38,18 @@ func CreateHardwares(client *netbox.APIClient, ctx context.Context, filters comm
 		}
 		if hardware != nil {
 			if userDataIgnitionVariant != nil {
-				if *userDataIgnitionVariant == "flatcar" {
+				switch *userDataIgnitionVariant {
+				case "flatcar":
 					ignition, err := butane.CreateFlatcarIgnition(client, ctx, device.GetId())
 					if err == nil {
 						hardware.Spec.VendorData = &ignition
 					}
-				} else {
+				case "fcos":
+					ignition, err := butane.CreateFCOSIgnition(client, ctx, device.GetId())
+					if err == nil {
+						hardware.Spec.VendorData = &ignition
+					}
+				default:
 					slog.Warn("CreateHardwares", "message", "the given variant is not supported. Skipping vendorData update.", "variant", *userDataIgnitionVariant)
 				}
 			}
