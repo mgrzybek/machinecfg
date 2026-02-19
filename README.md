@@ -101,7 +101,7 @@ Embed Fedora CoreOS vendor data and add objects directly into Kubernetes.
 ```bash
 ./machinecfg \
     --netbox-endpoint $NETBOX_ENDPOINT --netbox-token $NETBOX_TOKEN \
-    --sites paris-dc1 --roles cattle
+    --sites paris-dc1 --roles cattle \
   tinkerbell hardware \
     --embed-ignition-as-vendor-data \
     --embedded-ignition-variant=fcos
