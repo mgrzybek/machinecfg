@@ -118,8 +118,8 @@ func extractFCOSData(ctx context.Context, c *netbox.APIClient, device *netbox.De
 
 	return &v1_6.Config{
 		Config: v0_6.Config{
-			Version: "1.1.0",
-			Variant: "flatcar",
+			Version: "1.6.0",
+			Variant: "fcos",
 			Systemd: v0_6.Systemd{},
 			Storage: v0_6.Storage{Files: files},
 		},
