@@ -71,7 +71,7 @@ func configureLogger(cmd *cobra.Command) {
 	logLevel, _ := cmd.Flags().GetString("log-level")
 
 	switch strings.ToLower(logLevel) {
-	case "production":
+	case "info", "production":
 		handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})
 		logger := slog.New(handler)
 		slog.SetDefault(logger)
