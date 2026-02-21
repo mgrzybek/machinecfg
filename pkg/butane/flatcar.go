@@ -42,7 +42,8 @@ func CreateFlatcarIgnition(client *netbox.APIClient, ctx context.Context, device
 		slog.Error("CreateFlatcar", "message", err.Error())
 	}
 	if butane != nil {
-		slog.Info(fmt.Sprintf("%v", butane))
+		butaneJson, _ := json.Marshal(butane)
+		slog.Debug("CreateFlatcarIgnition", "butaneBase64", butaneJson)
 	}
 
 	result = GetFlatcarIgnition(butane)
@@ -91,8 +92,13 @@ func extractFlatcarData(ctx context.Context, c *netbox.APIClient, device *netbox
 			return nil, err
 		}
 
+		slog.Debug("extractFlatcarData", "iface", iface.Name)
+
 		for _, ipAddr := range ipAddresses.Results {
 			var vlanID int32
+			var unTaggedIfaceConfigured bool
+
+			slog.Debug("extractFlatcarData", "iface", iface.Name, "ipAddr", ipAddr.Address)
 
 			prefix, _, err := c.IpamAPI.IpamPrefixesList(ctx).Contains(ipAddr.Address).Execute()
 			if err != nil {
@@ -104,7 +110,11 @@ func extractFlatcarData(ctx context.Context, c *netbox.APIClient, device *netbox
 						files = appendSystemdNetdevFile(files, vlanID)
 						files = appendSystemdNetworkFileForVlan(&ctx, c, files, vlanID, &ipAddr)
 					} else {
+						if unTaggedIfaceConfigured {
+							return nil, fmt.Errorf("An untagged address has already been configured on this interface. That would create a duplicated systemd-networkd file for the physical interface. Please check that the requested VLANs are properly declared.")
+						}
 						files = appendSystemdNetworkFileForIface(&ctx, c, files, &iface, &ipAddr)
+						unTaggedIfaceConfigured = true
 					}
 				}
 			}
@@ -151,8 +161,11 @@ func appendSystemdNetworkFileForIface(ctx *context.Context, client *netbox.APICl
 		}
 	}
 
+	path := fmt.Sprintf("/etc/systemd/network/01-%s.network", iface.Name)
+	slog.Debug("appendSystemdNetworkFileForIface", "path", path, "ipAddr", ipAddr.Address)
+
 	files = append(files, v0_5.File{
-		Path:     fmt.Sprintf("/etc/systemd/network/01-%s.network", iface.Name),
+		Path:     path,
 		Contents: v0_5.Resource{Inline: &content},
 	})
 
@@ -174,8 +187,11 @@ func appendSystemdNetworkFileForVlan(ctx *context.Context, client *netbox.APICli
 		content = fmt.Sprintf("%s\nDNS=%s", content, addr.Address)
 	}
 
+	path := fmt.Sprintf("/etc/systemd/network/01-vlan-%v.network", vlanID)
+	slog.Debug("appendSystemdNetworkFileForVlan", "path", path, "vlanID", vlanID, "ipAddr", ipAddr.Address)
+
 	files = append(files, v0_5.File{
-		Path:     fmt.Sprintf("/etc/systemd/network/01-vlan-%v.network", vlanID),
+		Path:     path,
 		Contents: v0_5.Resource{Inline: &content},
 	})
 
@@ -201,7 +217,8 @@ func PrintFlatcarIgnitionFile(cfg *v1_1.Config, fileDescriptor *os.File) {
 func generateFlatcarIgnition(cfg *v1_1.Config) (result []byte) {
 	ignitionCfg, report, err := cfg.ToIgn3_4(common.TranslateOptions{})
 	if err != nil {
-		slog.Error("generateFlatcarIgnition", "message", err.Error(), "report", report.String())
+		cfgJson, _ := json.Marshal(cfg)
+		slog.Error("generateFlatcarIgnition", "message", err.Error(), "report", report.String(), "cfg", cfgJson)
 	} else {
 		result, _ = json.MarshalIndent(ignitionCfg, "", "  ")
 	}
