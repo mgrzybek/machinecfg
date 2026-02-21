@@ -2,6 +2,7 @@ package tinkerbell
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net"
@@ -54,7 +55,8 @@ func CreateHardwares(client *netbox.APIClient, ctx context.Context, filters comm
 				}
 			}
 
-			slog.Info(fmt.Sprintf("%v", hardware))
+			hardwareJson, _ := json.Marshal(hardware)
+			slog.Info("CreateHardwares", "hardware", hardwareJson)
 			result = append(result, *hardware)
 		}
 	}
@@ -267,7 +269,8 @@ func CreateHardwaresToPrune(client *netbox.APIClient, ctx context.Context, filte
 			slog.Error("CreateHardwaresToPrune", "message", err.Error(), "device", *device.Name.Get(), "device_id", device.Id)
 		}
 		if hardware != nil {
-			slog.Info(fmt.Sprintf("%v", hardware))
+			hardwareJson, _ := json.Marshal(hardware)
+			slog.Info("CreateHardwaresToPrune", "hardware", hardwareJson)
 			result = append(result, *hardware)
 		}
 	}
