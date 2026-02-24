@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/coreos/butane/base/v0_5"
 	"github.com/coreos/butane/config/common"
@@ -145,19 +146,21 @@ func appendSystemdNetworkFileForIface(ctx *context.Context, client *netbox.APICl
 		content = fmt.Sprintf("%sMACAddress=%s\n", content, *iface.MacAddress.Get())
 	}
 
+	content = fmt.Sprintf("%s\n[Network]\nLLDP=yes\nEmitLLDP=yes\n", content)
+
 	if hasDHCPTag(ipAddr.GetTags()) {
-		content = fmt.Sprintf("%s\n[Network]\nDHCP=yes\n", content)
+		content = fmt.Sprintf("%s\nDHCP=yes\n", content)
 	} else {
-		content = fmt.Sprintf("%s\n[Network]\nDHCP=no\n", content)
+		content = fmt.Sprintf("%s\nDHCP=no\nAddress=%s\n", content, ipAddr.Address)
 
 		gatewayAddresses := commonMachinecfg.GetTaggedAddressesFromPrefixOfAddr(ctx, client, "gateway", ipAddr)
 		for _, addr := range gatewayAddresses {
-			content = fmt.Sprintf("%s\nGateway=%s\n", content, addr)
+			content = fmt.Sprintf("%s\nGateway=%s\n", content, addr.Address)
 		}
 
 		dnsAddresses := commonMachinecfg.GetTaggedAddressesFromPrefixOfAddr(ctx, client, "dns", ipAddr)
 		for _, addr := range dnsAddresses {
-			content = fmt.Sprintf("%s\nDNS=%s\n", content, addr)
+			content = fmt.Sprintf("%s\nDNS=%s\n", content, strings.Split(addr.Address, "/")[0])
 		}
 	}
 
@@ -179,12 +182,12 @@ func appendSystemdNetworkFileForVlan(ctx *context.Context, client *netbox.APICli
 
 	gatewayAddresses := commonMachinecfg.GetTaggedAddressesFromPrefixOfAddr(ctx, client, "gateway", ipAddr)
 	for _, addr := range gatewayAddresses {
-		content = fmt.Sprintf("%s\nGateway=%s", content, addr.Address)
+		content = fmt.Sprintf("%s\nGateway=%s", content, strings.Split(addr.Address, "/")[0])
 	}
 
 	dnsAddresses := commonMachinecfg.GetTaggedAddressesFromPrefixOfAddr(ctx, client, "dns", ipAddr)
 	for _, addr := range dnsAddresses {
-		content = fmt.Sprintf("%s\nDNS=%s", content, addr.Address)
+		content = fmt.Sprintf("%s\nDNS=%s", content, strings.Split(addr.Address, "/")[0])
 	}
 
 	path := fmt.Sprintf("/etc/systemd/network/01-vlan-%v.network", vlanID)
