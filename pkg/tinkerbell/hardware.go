@@ -139,6 +139,10 @@ func extractHardwareData(ctx context.Context, c *netbox.APIClient, device *netbo
 
 	objectMeta := createMetaFromDevice(device)
 
+	systemDisk := tinkerbellKubeObjects.Disk{
+		Device: "/dev/sda",
+	}
+
 	hardwareSpec := tinkerbellKubeObjects.HardwareSpec{
 		Interfaces: []tinkerbellKubeObjects.Interface{
 			{
@@ -176,6 +180,9 @@ func extractHardwareData(ctx context.Context, c *netbox.APIClient, device *netbo
 			Manufacturer: &tinkerbellKubeObjects.MetadataManufacturer{
 				Slug: strings.ToLower(device.DeviceType.Manufacturer.Name),
 			},
+		},
+		Disks: []tinkerbellKubeObjects.Disk{
+			systemDisk,
 		},
 	}
 
