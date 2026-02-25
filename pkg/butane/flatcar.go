@@ -23,6 +23,32 @@ type Flatcar struct {
 	Hostname string
 }
 
+// SystemdNetworkdDevice is a systemd-networkd .network file
+type SystemdNetworkdDevice struct {
+	Name       string
+	MACAddress string
+
+	Network SystemdNetworkdNetworkSection
+	DHCPv4  map[string]string
+}
+
+type SystemdNetworkdNetworkSection struct {
+	Addresses       []string
+	Gateway         string
+	DNS             []string
+	Domains         []string
+	VLAN            []string
+	DHCP            string
+	DNSDefaultRoute string
+}
+
+// SystemdNetworkdNetdev is a systemd-networkd .netdev file
+type SystemdNetworkdNetdev struct {
+	Name string
+	Kind string
+	ID   int32
+}
+
 func CreateFlatcarIgnition(client *netbox.APIClient, ctx context.Context, deviceID int32) (result string, err error) {
 	var device *netbox.PaginatedDeviceWithConfigContextList
 	var response *http.Response
@@ -82,6 +108,9 @@ func CreateFlatcars(client *netbox.APIClient, ctx context.Context, filters commo
 func extractFlatcarData(ctx context.Context, c *netbox.APIClient, device *netbox.DeviceWithConfigContext) (*v1_1.Config, error) {
 	var files []v0_5.File
 
+	var netDevConfs []SystemdNetworkdNetdev
+	var physicalNetworkDevice SystemdNetworkdDevice
+
 	interfaces, _, err := c.DcimAPI.DcimInterfacesList(ctx).DeviceId([]int32{device.Id}).Execute()
 	if err != nil {
 		return nil, err
@@ -96,31 +125,29 @@ func extractFlatcarData(ctx context.Context, c *netbox.APIClient, device *netbox
 		slog.Debug("extractFlatcarData", "iface", iface.Name)
 
 		for _, ipAddr := range ipAddresses.Results {
-			var vlanID int32
-			var unTaggedIfaceConfigured bool
-
 			slog.Debug("extractFlatcarData", "iface", iface.Name, "ipAddr", ipAddr.Address)
 
-			prefix, _, err := c.IpamAPI.IpamPrefixesList(ctx).Contains(ipAddr.Address).Execute()
+			prefixes, _, err := c.IpamAPI.IpamPrefixesList(ctx).Contains(ipAddr.Address).Execute()
 			if err != nil {
 				slog.Error("extractFlatcarData", "message", err.Error())
 			} else {
-				if prefix.Count > 0 {
-					vlanID = prefix.Results[0].Vlan.Get().Vid
-					if isVlanIDinVlanList(vlanID, iface.TaggedVlans) {
-						files = appendSystemdNetdevFile(files, vlanID)
-						files = appendSystemdNetworkFileForVlan(&ctx, c, files, vlanID, &ipAddr)
+				if prefixes.Count > 0 {
+					prefix := prefixes.Results[0]
+					vlan := prefix.Vlan.Get()
+					if isVlanIDinVlanList(vlan.Vid, iface.TaggedVlans) {
+						netDevConf := SystemdNetworkdNetdev{Name: vlan.Name, Kind: "vlan", ID: vlan.Vid}
+						netDevConfs = append(netDevConfs, netDevConf)
+						files = appendSystemdNetworkFileForVlan(&ctx, c, files, &netDevConf, &ipAddr, &prefix)
 					} else {
-						if unTaggedIfaceConfigured {
-							return nil, fmt.Errorf("An untagged address has already been configured on this interface. That would create a duplicated systemd-networkd file for the physical interface. Please check that the requested VLANs are properly declared.")
-						}
-						files = appendSystemdNetworkFileForIface(&ctx, c, files, &iface, &ipAddr)
-						unTaggedIfaceConfigured = true
+						physicalNetworkDevice = setValuesToNetworkDevice(&ctx, c, files, &iface, &ipAddr, &prefix)
 					}
 				}
 			}
 		}
 	}
+
+	files = appendSystemdNetdevConfs(files, netDevConfs)
+	files = appendSystemdNetworkFileForIface(files, &physicalNetworkDevice, netDevConfs)
 
 	dcimFile := createDCIMFile(device)
 
@@ -137,35 +164,78 @@ func extractFlatcarData(ctx context.Context, c *netbox.APIClient, device *netbox
 	}, nil
 }
 
-func appendSystemdNetworkFileForIface(ctx *context.Context, client *netbox.APIClient, files []v0_5.File, iface *netbox.Interface, ipAddr *netbox.IPAddress) []v0_5.File {
-	var content string
-
-	content = fmt.Sprintf("[Match]\nName=%s\n", iface.Name)
+func setValuesToNetworkDevice(ctx *context.Context, client *netbox.APIClient, files []v0_5.File, iface *netbox.Interface, ipAddr *netbox.IPAddress, prefix *netbox.Prefix) (result SystemdNetworkdDevice) {
+	result.Name = iface.Name
 
 	if iface.MacAddress.Get() != nil {
-		content = fmt.Sprintf("%sMACAddress=%s\n", content, *iface.MacAddress.Get())
+		result.MACAddress = *iface.MacAddress.Get()
 	}
 
-	content = fmt.Sprintf("%s\n[Network]\nLLDP=yes\nEmitLLDP=yes\n", content)
-
 	if hasDHCPTag(ipAddr.GetTags()) {
-		content = fmt.Sprintf("%s\nDHCP=yes\n", content)
+		result.Network.DHCP = "yes"
 	} else {
-		content = fmt.Sprintf("%s\nDHCP=no\nAddress=%s\n", content, ipAddr.Address)
+		result.Network.DHCP = "no"
+		result.Network.Addresses = append(result.Network.Addresses, ipAddr.Address)
 
 		gatewayAddresses := commonMachinecfg.GetTaggedAddressesFromPrefixOfAddr(ctx, client, "gateway", ipAddr)
 		for _, addr := range gatewayAddresses {
-			content = fmt.Sprintf("%s\nGateway=%s\n", content, addr.Address)
+			result.Network.Gateway = addr.Address
 		}
 
 		dnsAddresses := commonMachinecfg.GetTaggedAddressesFromPrefixOfAddr(ctx, client, "dns", ipAddr)
 		for _, addr := range dnsAddresses {
-			content = fmt.Sprintf("%s\nDNS=%s\n", content, strings.Split(addr.Address, "/")[0])
+			result.Network.DNS = append(result.Network.DNS, strings.Split(addr.Address, "/")[0])
+			result.Network.Domains = append(result.Network.Domains, fmt.Sprint(prefix.CustomFields["SearchDomain"]))
+			result.Network.DNSDefaultRoute = "no"
 		}
 	}
 
-	path := fmt.Sprintf("/etc/systemd/network/01-%s.network", iface.Name)
-	slog.Debug("appendSystemdNetworkFileForIface", "path", path, "ipAddr", ipAddr.Address)
+	return result
+}
+
+func appendSystemdNetworkFileForIface(files []v0_5.File, networkDevice *SystemdNetworkdDevice, netDevs []SystemdNetworkdNetdev) []v0_5.File {
+	var content string
+
+	content = fmt.Sprintf("[Match]\nName=%s\n", networkDevice.Name)
+
+	if networkDevice.MACAddress != "" {
+		content = fmt.Sprintf("%sMACAddress=%s\n", content, networkDevice.MACAddress)
+	}
+
+	content = fmt.Sprintf("%s\n[Network]\nLLDP=yes\nEmitLLDP=yes\n", content)
+
+	if networkDevice.Network.DHCP == "yes" {
+		content = fmt.Sprintf("%sDHCP=yes\n", content)
+	} else {
+		content = fmt.Sprintf("%s\nDHCP=no\n", content)
+
+		for _, addr := range networkDevice.Network.Addresses {
+			content = fmt.Sprintf("%s\nAddress=%s\n", content, addr)
+		}
+
+		if networkDevice.Network.Gateway != "" {
+			content = fmt.Sprintf("%sGateway=%s\n", content, networkDevice.Network.Gateway)
+		}
+
+		for _, addr := range networkDevice.Network.DNS {
+			content = fmt.Sprintf("%sDNS=%s\n", content, addr)
+		}
+
+		if len(networkDevice.Network.Domains) == 0 {
+			content = fmt.Sprintf("%s\nDNSDefaultRoute=yes\n", content)
+		} else {
+			content = fmt.Sprintf("%s\nDomains=%s\nDNSDefaultRoute=no\n", content, strings.Join(networkDevice.Network.Domains, " "))
+		}
+	}
+
+	for _, netDev := range netDevs {
+		if netDev.Kind == "vlan" {
+			content = fmt.Sprintf("%sVLAN=%v\n", content, netDev.Name)
+		}
+	}
+
+	path := fmt.Sprintf("/etc/systemd/network/01-%s.network", networkDevice.Name)
+	slog.Debug("appendSystemdNetworkFileForIface", "path", path, "content", content)
 
 	files = append(files, v0_5.File{
 		Path:     path,
@@ -175,23 +245,30 @@ func appendSystemdNetworkFileForIface(ctx *context.Context, client *netbox.APICl
 	return files
 }
 
-func appendSystemdNetworkFileForVlan(ctx *context.Context, client *netbox.APIClient, files []v0_5.File, vlanID int32, ipAddr *netbox.IPAddress) []v0_5.File {
+func appendSystemdNetworkFileForVlan(ctx *context.Context, client *netbox.APIClient, files []v0_5.File, netDev *SystemdNetworkdNetdev, ipAddr *netbox.IPAddress, prefix *netbox.Prefix) []v0_5.File {
 	var content string
 
-	content = fmt.Sprintf("[Match]\nName=%v\n[Network]\nDHCP=no\nAddress=%s\n", vlanID, ipAddr.Address)
+	content = fmt.Sprintf("[Match]\nName=%v\n[Network]\nDHCP=no\nAddress=%s\n", netDev.Name, ipAddr.Address)
 
 	gatewayAddresses := commonMachinecfg.GetTaggedAddressesFromPrefixOfAddr(ctx, client, "gateway", ipAddr)
 	for _, addr := range gatewayAddresses {
-		content = fmt.Sprintf("%s\nGateway=%s", content, strings.Split(addr.Address, "/")[0])
+		content = fmt.Sprintf("%s\nGateway=%s\n", content, strings.Split(addr.Address, "/")[0])
 	}
 
 	dnsAddresses := commonMachinecfg.GetTaggedAddressesFromPrefixOfAddr(ctx, client, "dns", ipAddr)
 	for _, addr := range dnsAddresses {
-		content = fmt.Sprintf("%s\nDNS=%s", content, strings.Split(addr.Address, "/")[0])
+		content = fmt.Sprintf("%s\nDNS=%s\n", content, strings.Split(addr.Address, "/")[0])
+	}
+	if len(dnsAddresses) > 0 {
+		if prefix.CustomFields["Domains"] != nil {
+			content = fmt.Sprintf("%s\nDomains=%sDNSDefaultRoute=no\n", content, prefix.CustomFields["Domains"])
+		} else {
+			content = fmt.Sprintf("%sDNSDefaultRoute=yes\n", content)
+		}
 	}
 
-	path := fmt.Sprintf("/etc/systemd/network/01-vlan-%v.network", vlanID)
-	slog.Debug("appendSystemdNetworkFileForVlan", "path", path, "vlanID", vlanID, "ipAddr", ipAddr.Address)
+	path := fmt.Sprintf("/etc/systemd/network/01-%v.network", netDev.Name)
+	slog.Debug("appendSystemdNetworkFileForVlan", "path", path, "content", content)
 
 	files = append(files, v0_5.File{
 		Path:     path,
@@ -201,13 +278,17 @@ func appendSystemdNetworkFileForVlan(ctx *context.Context, client *netbox.APICli
 	return files
 }
 
-func appendSystemdNetdevFile(files []v0_5.File, vlanID int32) []v0_5.File {
-	content := fmt.Sprintf("[NetDev]\nName=%v\nKind=vlan\n[VLAN]\nId=%v", vlanID, vlanID)
+func appendSystemdNetdevConfs(files []v0_5.File, vlans []SystemdNetworkdNetdev) []v0_5.File {
+	for _, vlan := range vlans {
+		content := fmt.Sprintf("[NetDev]\nName=%v\nKind=%s\n[VLAN]\nId=%v\n", vlan.Name, vlan.Kind, vlan.ID)
 
-	files = append(files, v0_5.File{
-		Path:     fmt.Sprintf("/etc/systemd/network/00-vlan-%v.netdev", vlanID),
-		Contents: v0_5.Resource{Inline: &content},
-	})
+		path := fmt.Sprintf("/etc/systemd/network/00-%v.netdev", vlan.Name)
+		files = append(files, v0_5.File{
+			Path:     path,
+			Contents: v0_5.Resource{Inline: &content},
+		})
+		slog.Debug("appendSystemdNetdevConfs", "path", path, "content", content)
+	}
 
 	return files
 }

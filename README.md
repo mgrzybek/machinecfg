@@ -52,6 +52,9 @@ MachineCFG requires access to your NetBox instance. Set the following environmen
 | `NETBOX_URL`   | The base URL of your NetBox instance (e.g., https://netbox.example.com)
 | `NETBOX_TOKEN` | Your NetBox API Token
 
+
+A custom field called `Domains` can be added to `IPAM/Prefix` in order to manage `systemd-networkd` option [Domains](https://www.freedesktop.org/software/systemd/man/latest/systemd.network.html#Domains=).
+
 Netbox-side, devices' statuses are very important. They allow the tool to know which device to create and delete.
 
 | Device status   | Tinkerbell action
