@@ -110,6 +110,25 @@ Embed Fedora CoreOS vendor data and add objects directly into Kubernetes.
     --embedded-ignition-variant=fcos
 ```
 
+### Enable PXE boot on Hardware objects
+
+Enable PXE boot (`AllowPXE=true`) on all Hardware objects in a namespace:
+
+```bash
+./machinecfg tinkerbell hardware pxe-allow \
+    --namespace tinkerbell-system
+```
+
+Or target a single machine by hostname:
+
+```bash
+./machinecfg tinkerbell hardware pxe-allow \
+    --namespace tinkerbell-system \
+    --hostname my-server
+```
+
+The aliases `allow-pxe` and `deny-pxe` are also available for `pxe-allow` and `pxe-deny` respectively.
+
 ### Create Ignition files
 
 Write an `.ign` file per device into `/tmp`, using Flatcar variant.
