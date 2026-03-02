@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"strings"
 
 	"github.com/netbox-community/go-netbox/v4"
 
@@ -69,7 +68,7 @@ func extractTalosData(ctx context.Context, c *netbox.APIClient, device *netbox.D
 			return nil, err
 		}
 
-		if !hasDHCPTag(netboxInterface.Tags) {
+		if !commonMachinecfg.HasDHCPTag(netboxInterface.Tags) {
 			for _, ipAddr := range ipAddresses.Results {
 				var vlanID int32
 
@@ -79,7 +78,7 @@ func extractTalosData(ctx context.Context, c *netbox.APIClient, device *netbox.D
 				} else {
 					if prefix.Count > 0 {
 						vlanID = prefix.Results[0].Vlan.Get().Vid
-						if isVlanIDinVlanList(vlanID, netboxInterface.TaggedVlans) {
+						if commonMachinecfg.IsVlanIDInVlanList(vlanID, netboxInterface.TaggedVlans) {
 
 							talosVlans = append(talosVlans, &v1alpha1.Vlan{
 								VlanAddresses: []string{ipAddr.Address},
@@ -132,26 +131,6 @@ func extractTalosData(ctx context.Context, c *netbox.APIClient, device *netbox.D
 
 	result = append(result, &v1alpha1Config)
 	return result, err
-}
-
-func isVlanIDinVlanList(vlanID int32, vlans []netbox.VLAN) (result bool) {
-	for _, v := range vlans {
-		if v.Vid == vlanID {
-			result = true
-		}
-	}
-
-	return result
-}
-
-func hasDHCPTag(tags []netbox.NestedTag) (answer bool) {
-	for _, tag := range tags {
-		if strings.ToLower(tag.GetName()) == "dhcp" {
-			answer = true
-		}
-	}
-
-	return answer
 }
 
 func PrintYAMLFile(documents []config.Document, fileDescriptor *os.File) {

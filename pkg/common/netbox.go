@@ -69,6 +69,26 @@ func GetTaggedAddressesFromPrefixOfAddr(ctx *context.Context, client *netbox.API
 	return result
 }
 
+func HasDHCPTag(tags []netbox.NestedTag) (answer bool) {
+	for _, tag := range tags {
+		if strings.ToLower(tag.GetName()) == "dhcp" {
+			answer = true
+		}
+	}
+
+	return answer
+}
+
+func IsVlanIDInVlanList(vlanID int32, vlans []netbox.VLAN) (result bool) {
+	for _, v := range vlans {
+		if v.Vid == vlanID {
+			result = true
+		}
+	}
+
+	return result
+}
+
 func FromIPAddressesToStrings(addresses []netbox.IPAddress) (result []string) {
 	for _, addr := range addresses {
 		addr.Address = strings.Split(addr.Address, "/")[0]

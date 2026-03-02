@@ -2,30 +2,9 @@ package butane
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/netbox-community/go-netbox/v4"
 )
-
-func hasDHCPTag(tags []netbox.NestedTag) (answer bool) {
-	for _, tag := range tags {
-		if strings.ToLower(tag.GetName()) == "dhcp" {
-			answer = true
-		}
-	}
-
-	return answer
-}
-
-func isVlanIDinVlanList(vlanID int32, vlans []netbox.VLAN) (result bool) {
-	for _, v := range vlans {
-		if v.Vid == vlanID {
-			result = true
-		}
-	}
-
-	return result
-}
 
 func createDCIMFile(device *netbox.DeviceWithConfigContext) string {
 	return fmt.Sprintf(

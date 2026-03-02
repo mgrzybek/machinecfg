@@ -101,7 +101,7 @@ func extractFCOSData(ctx context.Context, c *netbox.APIClient, device *netbox.De
 			} else {
 				if prefix.Count > 0 {
 					vlanID = prefix.Results[0].Vlan.Get().Vid
-					if isVlanIDinVlanList(vlanID, iface.TaggedVlans) {
+					if commonMachinecfg.IsVlanIDInVlanList(vlanID, iface.TaggedVlans) {
 						files = appendNetworkManagerFileForVlan(&ctx, c, files, vlanID, &ipAddr, &iface)
 					} else {
 						files = appendNetworkManagerFileForIface(&ctx, c, files, &iface, &ipAddr)
@@ -131,7 +131,7 @@ func appendNetworkManagerFileForIface(ctx *context.Context, client *netbox.APICl
 
 	content = fmt.Sprintf("[connection]\nid=%s\ntype=ethernet\ninterface-name=%s\n", iface.Name, iface.Name)
 
-	if hasDHCPTag(ipAddr.GetTags()) {
+	if commonMachinecfg.HasDHCPTag(ipAddr.GetTags()) {
 		content = fmt.Sprintf("%s\n[ipv4]method=auto", content)
 	} else {
 		var gAddresses []string

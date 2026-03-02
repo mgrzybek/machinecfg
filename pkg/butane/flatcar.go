@@ -134,7 +134,7 @@ func extractFlatcarData(ctx context.Context, c *netbox.APIClient, device *netbox
 				if prefixes.Count > 0 {
 					prefix := prefixes.Results[0]
 					vlan := prefix.Vlan.Get()
-					if isVlanIDinVlanList(vlan.Vid, iface.TaggedVlans) {
+					if commonMachinecfg.IsVlanIDInVlanList(vlan.Vid, iface.TaggedVlans) {
 						netDevConf := SystemdNetworkdNetdev{Name: vlan.Name, Kind: "vlan", ID: vlan.Vid}
 						netDevConfs = append(netDevConfs, netDevConf)
 						files = appendSystemdNetworkFileForVlan(&ctx, c, files, &netDevConf, &ipAddr, &prefix)
@@ -171,7 +171,7 @@ func setValuesToNetworkDevice(ctx *context.Context, client *netbox.APIClient, fi
 		result.MACAddress = *iface.MacAddress.Get()
 	}
 
-	if hasDHCPTag(ipAddr.GetTags()) {
+	if commonMachinecfg.HasDHCPTag(ipAddr.GetTags()) {
 		result.Network.DHCP = "yes"
 	} else {
 		result.Network.DHCP = "no"
