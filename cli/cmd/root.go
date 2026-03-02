@@ -114,29 +114,10 @@ func processRootArgs(cmd *cobra.Command, requireOutputDirectory bool) *Configura
 		}
 	}
 
-	/*
-		if regions == "" {
-			slog.Error("regions option is required", "func", "processRootArgs")
-			fatalError = true
-		}
-	*/
-
 	if sites == "" {
 		slog.Error("sites option is required", "func", "processRootArgs")
 		fatalError = true
 	}
-
-	/*
-		if locations == "" {
-			slog.Error("locations option is required", "func", "processRootArgs")
-			fatalError = true
-		}
-
-		if tenants == "" {
-			slog.Error("tenants option is required", "func", "processRootArgs")
-			fatalError = true
-		}
-	*/
 
 	if roles == "" {
 		slog.Error("roles option is required", "func", "processRootArgs")
