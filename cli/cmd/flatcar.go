@@ -28,7 +28,7 @@ var flatcarCmd = &cobra.Command{
 
 		flatcars, err := butane.CreateFlatcars(client, ctx, rootArguments.Filters)
 		if err != nil {
-			slog.Error("flatcarCmd", "message", err.Error())
+			slog.Error("failed to create flatcar configs", "func", "flatcarCmd", "error", err.Error())
 			os.Exit(1)
 		}
 
@@ -45,7 +45,7 @@ func writeFlatcarIgnition(f *butane.Flatcar, outputDirectory string) {
 	}
 	fd, err := createFileDescriptor(outputDirectory, f.Hostname, "ign")
 	if err != nil {
-		slog.Error("flatcarCmd", "message", err.Error())
+		slog.Error("failed to create output file", "func", "writeFlatcarIgnition", "error", err.Error())
 		return
 	}
 	defer fd.Close()

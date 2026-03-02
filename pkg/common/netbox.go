@@ -14,13 +14,13 @@ func GetDevices(ctx *context.Context, client *netbox.APIClient, filters DeviceFi
 
 	switch {
 	case len(filters.Tenants) > 0 && filters.Tenants[0] != "" && len(filters.Locations) > 0 && filters.Locations[0] != "":
-		slog.Info("GetDevices", "message", "tenants+locations", "tenants", len(filters.Tenants), "locations", len(filters.Locations))
+		slog.Info("filtering devices by tenants and locations", "func", "GetDevices", "tenants", len(filters.Tenants), "locations", len(filters.Locations))
 		devices, response, err = client.DcimAPI.DcimDevicesList(*ctx).HasPrimaryIp(true).Status(filters.Status).Site(filters.Sites).Location(filters.Locations).Tenant(filters.Tenants).Role(filters.Roles).Execute()
 	case len(filters.Tenants) > 0 && filters.Tenants[0] != "":
-		slog.Info("GetDevices", "message", "tenants")
+		slog.Info("filtering devices by tenants", "func", "GetDevices")
 		devices, response, err = client.DcimAPI.DcimDevicesList(*ctx).HasPrimaryIp(true).Status(filters.Status).Site(filters.Sites).Tenant(filters.Tenants).Role(filters.Roles).Execute()
 	case len(filters.Locations) > 0 && filters.Locations[0] != "":
-		slog.Info("GetDevices", "message", "locations")
+		slog.Info("filtering devices by locations", "func", "GetDevices")
 		devices, response, err = client.DcimAPI.DcimDevicesList(*ctx).HasPrimaryIp(true).Status(filters.Status).Site(filters.Sites).Location(filters.Locations).Role(filters.Roles).Execute()
 	default:
 		devices, response, err = client.DcimAPI.DcimDevicesList(*ctx).HasPrimaryIp(true).Status(filters.Status).Site(filters.Sites).Role(filters.Roles).Execute()
@@ -28,9 +28,9 @@ func GetDevices(ctx *context.Context, client *netbox.APIClient, filters DeviceFi
 
 	if err != nil {
 		if response != nil {
-			slog.Error("GetDevices", "error", err.Error(), "message", response.Body, "code", response.StatusCode)
+			slog.Error("failed to list devices", "func", "GetDevices", "error", err.Error(), "code", response.StatusCode)
 		} else {
-			slog.Error("GetDevices", "error", err.Error())
+			slog.Error("failed to list devices", "func", "GetDevices", "error", err.Error())
 		}
 	}
 
@@ -41,23 +41,23 @@ func GetTaggedAddressesFromPrefixOfAddr(ctx *context.Context, client *netbox.API
 	prefixes, response, err := client.IpamAPI.IpamPrefixesList(*ctx).Contains(addr.Address).Execute()
 
 	if err != nil {
-		slog.Error("getTaggedAddressesFromPrefixOfAddr", "message", err.Error())
+		slog.Error("failed to list prefixes", "func", "GetTaggedAddressesFromPrefixOfAddr", "error", err.Error())
 	} else if response.StatusCode != 200 {
-		slog.Error("getTaggedAddressesFromPrefixOfAddr", "message", response.Body, "code", response.StatusCode)
+		slog.Error("unexpected response status", "func", "GetTaggedAddressesFromPrefixOfAddr", "code", response.StatusCode)
 	}
 
 	if prefixes.Count == 0 {
-		slog.Warn("getTaggedAddressesFromPrefixOfAddr", "message", "No prefix found. This should not happen", "ipAddress", addr.Address)
+		slog.Warn("no prefix found", "func", "GetTaggedAddressesFromPrefixOfAddr", "ipAddress", addr.Address)
 	} else {
 		prefix := prefixes.Results[0]
 
 		addresses, _, err := client.IpamAPI.IpamIpAddressesList(*ctx).Parent([]string{prefix.Display}).Tag([]string{tag}).Execute()
 
 		if err != nil {
-			slog.Warn("getTaggedAddressesFromPrefixOfAddr", "message", err.Error())
+			slog.Warn("failed to list addresses by tag", "func", "GetTaggedAddressesFromPrefixOfAddr", "error", err.Error())
 		} else {
 			if addresses.Count == 0 {
-				slog.Warn("getTaggedAddressesFromPrefixOfAddr", "message", "No address found with the requested tag. This should not happen", "prefix_id", prefix.Id, "prefix", prefix.Display, "tag", tag)
+				slog.Warn("no address found with tag", "func", "GetTaggedAddressesFromPrefixOfAddr", "prefix_id", prefix.Id, "prefix", prefix.Display, "tag", tag)
 			}
 
 			for _, address := range addresses.Results {

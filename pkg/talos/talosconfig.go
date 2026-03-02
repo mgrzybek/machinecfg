@@ -31,15 +31,15 @@ func CreateTalosConfigs(client *netbox.APIClient, ctx context.Context, filters c
 	}
 
 	if devices.Count == 0 {
-		slog.Warn("CreateTalosConfigs", "message", "no device found, this must not be what you expected")
+		slog.Warn("no device found", "func", "CreateTalosConfigs")
 	} else {
 		for _, device := range devices.Results {
 			talos, err := extractTalosData(ctx, client, &device)
 			if err != nil {
-				slog.Error("createHardwares", "message", err.Error())
+				slog.Error("failed to extract talos data", "func", "CreateTalosConfigs", "error", err.Error())
 			}
 			if talos != nil {
-				slog.Info(fmt.Sprintf("%v", talos))
+				slog.Debug("talos config extracted", "func", "CreateTalosConfigs")
 				item := Talos{
 					Config:   talos,
 					Hostname: device.GetName(),
@@ -77,7 +77,7 @@ func extractTalosData(ctx context.Context, c *netbox.APIClient, device *netbox.D
 
 				prefix, _, err := c.IpamAPI.IpamPrefixesList(ctx).Contains(ipAddr.Address).Execute()
 				if err != nil {
-					slog.Error("extractFlatcarData", "message", err.Error())
+					slog.Error("failed to list prefixes", "func", "extractTalosData", "error", err.Error())
 				} else {
 					if prefix.Count > 0 {
 						vlanID = prefix.Results[0].Vlan.Get().Vid
@@ -141,7 +141,7 @@ func PrintYAMLFile(documents []config.Document, fileDescriptor *os.File) {
 		yamlData, err := yaml.Marshal(d)
 
 		if err != nil {
-			slog.Error("PrintYAMLFile", "message", err.Error())
+			slog.Error("failed to marshal yaml", "func", "PrintYAMLFile", "error", err.Error())
 		} else {
 			fmt.Fprintf(fileDescriptor, "%s", yamlData)
 		}

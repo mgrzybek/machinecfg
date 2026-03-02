@@ -31,23 +31,23 @@ func CreateFCOSIgnition(client *netbox.APIClient, ctx context.Context, deviceID 
 
 	if err != nil {
 		if response != nil {
-			slog.Error("CreateFCOS", "error", err.Error(), "message", response.Body)
+			slog.Error("failed to list devices", "func", "CreateFCOSIgnition", "error", err.Error(), "code", response.StatusCode)
 		} else {
-			slog.Error("CreateFCOS", "error", err.Error())
+			slog.Error("failed to list devices", "func", "CreateFCOSIgnition", "error", err.Error())
 		}
 		return result, err
 	}
 
 	if device.Count != 1 {
-		slog.Error("CreateFCOS", "message", "we did not find only one result, this must not be what you expected", "device_id", deviceID, "count", device.Count)
+		slog.Error("unexpected device count", "func", "CreateFCOSIgnition", "device_id", deviceID, "count", device.Count)
 	}
 
 	butane, err := extractFCOSData(ctx, client, &device.Results[0])
 	if err != nil {
-		slog.Error("CreateFCOS", "message", err.Error())
+		slog.Error("failed to extract fcos data", "func", "CreateFCOSIgnition", "error", err.Error())
 	}
 	if butane != nil {
-		slog.Info(fmt.Sprintf("%v", butane))
+		slog.Debug("fcos config extracted", "func", "CreateFCOSIgnition")
 	}
 
 	result = GetFCOSIgnition(butane)
@@ -65,16 +65,16 @@ func CreateFCOSs(client *netbox.APIClient, ctx context.Context, filters commonMa
 	}
 
 	if devices.Count == 0 {
-		slog.Warn("CreateFCOSs", "message", "no device found, this must not be what you expected")
+		slog.Warn("no device found", "func", "CreateFCOSs")
 	}
 
 	for _, device := range devices.Results {
 		butane, err := extractFCOSData(ctx, client, &device)
 		if err != nil {
-			slog.Error("createHardwares", "message", err.Error())
+			slog.Error("failed to extract fcos data", "func", "CreateFCOSs", "error", err.Error())
 		}
 		if butane != nil {
-			slog.Info(fmt.Sprintf("%v", butane))
+			slog.Debug("fcos config extracted", "func", "CreateFCOSs")
 			result = append(result, FCOS{
 				Config:   *butane,
 				Hostname: *device.Name.Get(),
@@ -104,7 +104,7 @@ func extractFCOSData(ctx context.Context, c *netbox.APIClient, device *netbox.De
 
 			prefix, _, err := c.IpamAPI.IpamPrefixesList(ctx).Contains(ipAddr.Address).Execute()
 			if err != nil {
-				slog.Error("extractFCOSData", "message", err.Error())
+				slog.Error("failed to list prefixes", "func", "extractFCOSData", "error", err.Error())
 			} else {
 				if prefix.Count > 0 {
 					vlanID = prefix.Results[0].Vlan.Get().Vid
@@ -190,7 +190,7 @@ func PrintFCOSIgnitionFile(cfg *v1_6.Config, fileDescriptor *os.File) {
 func generateFCOSIgnition(cfg *v1_6.Config) (result []byte) {
 	ignitionCfg, report, err := cfg.ToIgn3_5(common.TranslateOptions{})
 	if err != nil {
-		slog.Error("generateFCOSIgnition", "message", err.Error(), "report", report.String())
+		slog.Error("failed to generate ignition", "func", "generateFCOSIgnition", "error", err.Error(), "report", report.String())
 	} else {
 		result, _ = json.MarshalIndent(ignitionCfg, "", "  ")
 	}

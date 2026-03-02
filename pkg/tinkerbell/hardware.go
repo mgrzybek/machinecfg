@@ -2,7 +2,6 @@ package tinkerbell
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net"
@@ -27,15 +26,18 @@ func CreateHardwares(client *netbox.APIClient, ctx context.Context, filters comm
 
 	filters.Status = []string{"staged"}
 	devices, err = commonMachinecfg.GetDevices(&ctx, client, filters)
+	if err != nil {
+		return result, err
+	}
 
 	if devices.Count == 0 {
-		slog.Warn("CreateHardwares", "message", "no device found, this must not be what you expected")
+		slog.Warn("no device found", "func", "CreateHardwares")
 	}
 
 	for _, device := range devices.Results {
 		hardware, err := extractHardwareData(ctx, client, &device)
 		if err != nil {
-			slog.Error("CreateHardwares", "message", err.Error(), "device", *device.Name.Get(), "device_id", device.Id)
+			slog.Error("failed to extract hardware data", "func", "CreateHardwares", "error", err.Error(), "device", *device.Name.Get(), "device_id", device.Id)
 		}
 		if hardware != nil {
 			if userDataIgnitionVariant != nil {
@@ -51,12 +53,11 @@ func CreateHardwares(client *netbox.APIClient, ctx context.Context, filters comm
 						hardware.Spec.VendorData = &ignition
 					}
 				default:
-					slog.Warn("CreateHardwares", "message", "the given variant is not supported. Skipping vendorData update.", "variant", *userDataIgnitionVariant)
+					slog.Warn("unsupported ignition variant", "func", "CreateHardwares", "variant", *userDataIgnitionVariant)
 				}
 			}
 
-			hardwareJson, _ := json.Marshal(hardware)
-			slog.Info("CreateHardwares", "hardware", hardwareJson)
+			slog.Debug("hardware object created", "func", "CreateHardwares")
 			result = append(result, *hardware)
 		}
 	}
@@ -68,7 +69,7 @@ func PrintDefaultYAML(hardware *tinkerbellKubeObjects.Hardware, destination *os.
 	yamlData, err := yaml.Marshal(hardware)
 
 	if err != nil {
-		slog.Error("PrintDefaultYAML", "message", err.Error())
+		slog.Error("failed to marshal yaml", "func", "PrintDefaultYAML", "error", err.Error())
 	} else {
 		fmt.Fprintf(destination, "%s", yamlData)
 	}
@@ -79,18 +80,18 @@ func PrintExternalYAML(hardware *tinkerbellKubeObjects.Hardware, templatePath st
 	var err error
 
 	if destination == nil {
-		slog.Info("PrintExternalYAML", "message", "writing to stdout as no destination has been given")
+		slog.Info("no destination given, writing to stdout", "func", "PrintExternalYAML")
 		destination = os.Stdout
 	}
 
 	tmpl, err = template.New(templatePath).ParseFiles(templatePath)
 	if err != nil {
-		slog.Error("PrintExternalYAML", "message", err.Error())
+		slog.Error("failed to parse template", "func", "PrintExternalYAML", "error", err.Error())
 		return
 	}
 	err = tmpl.Execute(destination, hardware)
 	if err != nil {
-		slog.Error("PrintExternalYAML", "message", err.Error())
+		slog.Error("failed to execute template", "func", "PrintExternalYAML", "error", err.Error())
 		return
 	}
 }
@@ -265,19 +266,21 @@ func CreateHardwaresToPrune(client *netbox.APIClient, ctx context.Context, filte
 
 	filters.Status = []string{"offline", "planned"}
 	devices, err = commonMachinecfg.GetDevices(&ctx, client, filters)
+	if err != nil {
+		return result, err
+	}
 
 	if devices.Count == 0 {
-		slog.Warn("CreateHardwaresToPrune", "message", "no device found, this must not be what you expected")
+		slog.Warn("no device found", "func", "CreateHardwaresToPrune")
 	}
 
 	for _, device := range devices.Results {
 		hardware, err := extractHardwareData(ctx, client, &device)
 		if err != nil {
-			slog.Error("CreateHardwaresToPrune", "message", err.Error(), "device", *device.Name.Get(), "device_id", device.Id)
+			slog.Error("failed to extract hardware data", "func", "CreateHardwaresToPrune", "error", err.Error(), "device", *device.Name.Get(), "device_id", device.Id)
 		}
 		if hardware != nil {
-			hardwareJson, _ := json.Marshal(hardware)
-			slog.Info("CreateHardwaresToPrune", "hardware", hardwareJson)
+			slog.Debug("hardware object added to prune list", "func", "CreateHardwaresToPrune")
 			result = append(result, *hardware)
 		}
 	}

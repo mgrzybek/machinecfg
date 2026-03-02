@@ -57,24 +57,23 @@ func CreateFlatcarIgnition(client *netbox.APIClient, ctx context.Context, device
 
 	if err != nil {
 		if response != nil {
-			slog.Error("CreateFlatcar", "error", err.Error(), "message", response.Body)
+			slog.Error("failed to list devices", "func", "CreateFlatcarIgnition", "error", err.Error(), "code", response.StatusCode)
 		} else {
-			slog.Error("CreateFlatcar", "error", err.Error())
+			slog.Error("failed to list devices", "func", "CreateFlatcarIgnition", "error", err.Error())
 		}
 		return result, err
 	}
 
 	if device.Count != 1 {
-		slog.Error("CreateFlatcar", "message", "we did not find only one result, this must not be what you expected", "device_id", deviceID, "count", device.Count)
+		slog.Error("unexpected device count", "func", "CreateFlatcarIgnition", "device_id", deviceID, "count", device.Count)
 	}
 
 	butane, err := extractFlatcarData(ctx, client, &device.Results[0])
 	if err != nil {
-		slog.Error("CreateFlatcar", "message", err.Error())
+		slog.Error("failed to extract flatcar data", "func", "CreateFlatcarIgnition", "error", err.Error())
 	}
 	if butane != nil {
-		butaneJson, _ := json.Marshal(butane)
-		slog.Debug("CreateFlatcarIgnition", "butaneBase64", butaneJson)
+		slog.Debug("flatcar config extracted", "func", "CreateFlatcarIgnition")
 	}
 
 	result = GetFlatcarIgnition(butane)
@@ -92,16 +91,16 @@ func CreateFlatcars(client *netbox.APIClient, ctx context.Context, filters commo
 	}
 
 	if devices.Count == 0 {
-		slog.Warn("CreateFlatcars", "message", "no device found, this must not be what you expected")
+		slog.Warn("no device found", "func", "CreateFlatcars")
 	}
 
 	for _, device := range devices.Results {
 		butane, err := extractFlatcarData(ctx, client, &device)
 		if err != nil {
-			slog.Error("createHardwares", "message", err.Error())
+			slog.Error("failed to extract flatcar data", "func", "CreateFlatcars", "error", err.Error())
 		}
 		if butane != nil {
-			slog.Info(fmt.Sprintf("%v", butane))
+			slog.Debug("flatcar config extracted", "func", "CreateFlatcars")
 			result = append(result, Flatcar{
 				Config:   *butane,
 				Hostname: *device.Name.Get(),
@@ -129,14 +128,14 @@ func extractFlatcarData(ctx context.Context, c *netbox.APIClient, device *netbox
 			return nil, err
 		}
 
-		slog.Debug("extractFlatcarData", "iface", iface.Name)
+		slog.Debug("processing interface", "func", "extractFlatcarData", "iface", iface.Name)
 
 		for _, ipAddr := range ipAddresses.Results {
-			slog.Debug("extractFlatcarData", "iface", iface.Name, "ipAddr", ipAddr.Address)
+			slog.Debug("processing ip address", "func", "extractFlatcarData", "iface", iface.Name, "ipAddr", ipAddr.Address)
 
 			prefixes, _, err := c.IpamAPI.IpamPrefixesList(ctx).Contains(ipAddr.Address).Execute()
 			if err != nil {
-				slog.Error("extractFlatcarData", "message", err.Error())
+				slog.Error("failed to list prefixes", "func", "extractFlatcarData", "error", err.Error())
 			} else {
 				if prefixes.Count > 0 {
 					prefix := prefixes.Results[0]
@@ -244,7 +243,7 @@ func appendSystemdNetworkFileForIface(files []v0_5.File, networkDevice *SystemdN
 	}
 
 	path := fmt.Sprintf("/etc/systemd/network/01-%s.network", networkDevice.Name)
-	slog.Debug("appendSystemdNetworkFileForIface", "path", path, "content", content)
+	slog.Debug("writing network file", "func", "appendSystemdNetworkFileForIface", "path", path)
 
 	files = append(files, v0_5.File{
 		Path:     path,
@@ -277,7 +276,7 @@ func appendSystemdNetworkFileForVlan(ctx *context.Context, client *netbox.APICli
 	}
 
 	path := fmt.Sprintf("/etc/systemd/network/01-%v.network", netDev.Name)
-	slog.Debug("appendSystemdNetworkFileForVlan", "path", path, "content", content)
+	slog.Debug("writing vlan network file", "func", "appendSystemdNetworkFileForVlan", "path", path)
 
 	files = append(files, v0_5.File{
 		Path:     path,
@@ -296,7 +295,7 @@ func appendSystemdNetdevConfs(files []v0_5.File, vlans []SystemdNetworkdNetdev) 
 			Path:     path,
 			Contents: v0_5.Resource{Inline: &content},
 		})
-		slog.Debug("appendSystemdNetdevConfs", "path", path, "content", content)
+		slog.Debug("writing netdev file", "func", "appendSystemdNetdevConfs", "path", path)
 	}
 
 	return files
@@ -310,8 +309,7 @@ func PrintFlatcarIgnitionFile(cfg *v1_1.Config, fileDescriptor *os.File) {
 func generateFlatcarIgnition(cfg *v1_1.Config) (result []byte) {
 	ignitionCfg, report, err := cfg.ToIgn3_4(common.TranslateOptions{})
 	if err != nil {
-		cfgJson, _ := json.Marshal(cfg)
-		slog.Error("generateFlatcarIgnition", "message", err.Error(), "report", report.String(), "cfg", cfgJson)
+		slog.Error("failed to generate ignition", "func", "generateFlatcarIgnition", "error", err.Error(), "report", report.String())
 	} else {
 		result, _ = json.MarshalIndent(ignitionCfg, "", "  ")
 	}

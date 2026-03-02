@@ -28,7 +28,7 @@ var machineconfigCmd = &cobra.Command{
 
 		configs, err := talos.CreateTalosConfigs(client, ctx, rootArguments.Filters)
 		if err != nil {
-			slog.Error("machineconfigCmd", "message", err.Error())
+			slog.Error("failed to create talos configs", "func", "machineconfigCmd", "error", err.Error())
 			os.Exit(1)
 		}
 
@@ -45,7 +45,7 @@ func writeTalosConfig(c *talos.Talos, outputDirectory string) {
 	}
 	fd, err := createFileDescriptor(outputDirectory, c.Hostname, ".patch.yaml")
 	if err != nil {
-		slog.Error("machineconfigCmd", "message", err.Error())
+		slog.Error("failed to create output file", "func", "writeTalosConfig", "error", err.Error())
 		return
 	}
 	defer fd.Close()

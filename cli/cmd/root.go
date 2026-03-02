@@ -96,48 +96,48 @@ func processRootArgs(cmd *cobra.Command, requireOutputDirectory bool) *Configura
 	clusters, _ := cmd.Flags().GetString("clusters")
 
 	if endpoint == "" {
-		slog.Error("endpoint option must be given")
+		slog.Error("endpoint option is required", "func", "processRootArgs")
 		fatalError = true
 	}
 
 	if len(token) != 40 {
-		slog.Error("token option must be valid")
+		slog.Error("token option is invalid", "func", "processRootArgs")
 		fatalError = true
 	}
 
 	if requireOutputDirectory {
 		if len(outputDirectory) == 0 {
-			slog.Error("output-directory must be given")
+			slog.Error("output-directory is required", "func", "processRootArgs")
 			fatalError = true
 		}
 	}
 
 	/*
 		if regions == "" {
-			slog.Error("regions option must be given")
+			slog.Error("regions option is required", "func", "processRootArgs")
 			fatalError = true
 		}
 	*/
 
 	if sites == "" {
-		slog.Error("sites option must be given")
+		slog.Error("sites option is required", "func", "processRootArgs")
 		fatalError = true
 	}
 
 	/*
 		if locations == "" {
-			slog.Error("locations option must be given")
+			slog.Error("locations option is required", "func", "processRootArgs")
 			fatalError = true
 		}
 
 		if tenants == "" {
-			slog.Error("tenants option must be given")
+			slog.Error("tenants option is required", "func", "processRootArgs")
 			fatalError = true
 		}
 	*/
 
 	if roles == "" {
-		slog.Error("roles option must be given")
+		slog.Error("roles option is required", "func", "processRootArgs")
 		fatalError = true
 	}
 
@@ -168,7 +168,7 @@ func dirExists(path string) bool {
 	if err == nil {
 		return true
 	}
-	slog.Error("dirExists", "message", err.Error())
+	slog.Error("failed to stat path", "func", "dirExists", "error", err.Error())
 	return false
 }
 
@@ -177,7 +177,7 @@ func fileExists(path string) bool {
 	if err == nil {
 		return true
 	} else {
-		slog.Error("fileExists", "message", err.Error())
+		slog.Error("failed to stat path", "func", "fileExists", "error", err.Error())
 	}
 	if os.IsNotExist(err) {
 		return false
@@ -197,7 +197,7 @@ func getK8sClient() (client.Client, error) {
 
 	config, err = rest.InClusterConfig()
 	if err != nil {
-		slog.Debug("getk8sClient", "message", "In-Cluster failed, trying Out-Cluster configuration...")
+		slog.Debug("in-cluster config failed, trying out-of-cluster", "func", "getK8sClient")
 
 		kubeconfig := getKubeconfigPath()
 
@@ -205,17 +205,17 @@ func getK8sClient() (client.Client, error) {
 		if err != nil {
 			return nil, fmt.Errorf("cannot find any kubeconfig: %w", err)
 		} else {
-			slog.Info("getK8sClient", "message", "Out-Cluster configuration found", "kubeconfig", kubeconfig)
+			slog.Info("out-of-cluster configuration found", "func", "getK8sClient", "kubeconfig", kubeconfig)
 		}
 	} else {
-		slog.Info("getK8sClient", "message", "In-Cluster configuration found")
+		slog.Info("in-cluster configuration found", "func", "getK8sClient")
 	}
 
 	scheme = runtime.NewScheme()
 
 	err = tinkerbellKubeObjects.AddToScheme(scheme)
 	if err != nil {
-		slog.Error("getK8sClient", "message", err.Error())
+		slog.Error("failed to add tinkerbell scheme", "func", "getK8sClient", "error", err.Error())
 		return nil, err
 	}
 

@@ -44,7 +44,7 @@ When device is in offline or planned status, it is deleted.`,
 		k8sClient, err := getK8sClient()
 		if err != nil {
 			if !dirExists(rootArguments.OutputDirectory) {
-				slog.Error("output-directory does not exist and no k8s configuration found")
+				slog.Error("no output directory and no k8s configuration found", "func", "hardwareCmd")
 				os.Exit(1)
 			}
 		}
@@ -54,7 +54,7 @@ When device is in offline or planned status, it is deleted.`,
 
 		hardwares, err := tinkerbell.CreateHardwares(client, ctx, rootArguments.Filters, hardwareArguments.EmbeddedIgnitionVariant)
 		if err != nil {
-			slog.Error("hardwareCmd", "message", err.Error())
+			slog.Error("failed to create hardwares", "func", "hardwareCmd", "error", err.Error())
 			os.Exit(1)
 		}
 		for _, h := range hardwares {
@@ -64,7 +64,7 @@ When device is in offline or planned status, it is deleted.`,
 				err = k8sClient.Create(ctx, &h)
 				if err != nil {
 					if !errors.IsAlreadyExists(err) {
-						slog.Error("hardwareCmd", "message", err.Error(), "namespace", h.Namespace, "device", h.Name)
+						slog.Error("failed to create k8s object", "func", "hardwareCmd", "error", err.Error(), "namespace", h.Namespace, "device", h.Name)
 						failureCounter = failureCounter + 1
 					} else {
 						successCounter = successCounter + 1
@@ -72,31 +72,30 @@ When device is in offline or planned status, it is deleted.`,
 				} else {
 					successCounter = successCounter + 1
 				}
-
-				slog.Info("hardwareCmd", "message", "creations", "success_nb", successCounter, "failure_nb", failureCounter)
 			}
 		}
 
 		if k8sClient != nil {
+			slog.Info("creation summary", "func", "hardwareCmd", "success", successCounter, "failure", failureCounter)
 			successCounter = 0
 			failureCounter = 0
 
 			hardwares, err := tinkerbell.CreateHardwaresToPrune(client, ctx, rootArguments.Filters)
 			if err != nil {
-				slog.Error("hardwareCmd", "message", err.Error())
+				slog.Error("failed to list hardwares to prune", "func", "hardwareCmd", "error", err.Error())
 				os.Exit(1)
 			}
 			for _, h := range hardwares {
 				err = k8sClient.Delete(ctx, &h)
 				if err != nil {
-					slog.Error("hardwareCmd", "message", err.Error(), "namespace", h.Namespace, "device", h.Name)
+					slog.Error("failed to delete k8s object", "func", "hardwareCmd", "error", err.Error(), "namespace", h.Namespace, "device", h.Name)
 					failureCounter = failureCounter + 1
 				} else {
 					successCounter = successCounter + 1
 				}
 			}
 
-			slog.Info("hardwareCmd", "message", "deletions", "success_nb", successCounter, "failure_nb", failureCounter)
+			slog.Info("deletion summary", "func", "hardwareCmd", "success", successCounter, "failure", failureCounter)
 		}
 
 	},
@@ -136,7 +135,7 @@ func processHardwareArgs(cmd *cobra.Command) *HardwareConfigurationArgs {
 func printYAMLFile(h *tinkerbellKubeObjects.Hardware, rootArguments *ConfigurationArgs, hardwareArguments *HardwareConfigurationArgs) {
 	outputFileDescriptor, err := createFileDescriptor(rootArguments.OutputDirectory, h.Spec.Metadata.Instance.Hostname, "yaml")
 	if err != nil {
-		slog.Error("hardwareCmd", "message", err.Error())
+		slog.Error("failed to create output file", "func", "printYAMLFile", "error", err.Error())
 	} else {
 		defer outputFileDescriptor.Close()
 		if hardwareArguments.Template == nil {

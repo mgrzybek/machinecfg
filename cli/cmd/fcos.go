@@ -28,7 +28,7 @@ var fcosCmd = &cobra.Command{
 
 		fcoss, err := butane.CreateFCOSs(client, ctx, rootArguments.Filters)
 		if err != nil {
-			slog.Error("fcosCmd", "message", err.Error())
+			slog.Error("failed to create fcos configs", "func", "fcosCmd", "error", err.Error())
 			os.Exit(1)
 		}
 
@@ -45,7 +45,7 @@ func writeFCOSIgnition(f *butane.FCOS, outputDirectory string) {
 	}
 	fd, err := createFileDescriptor(outputDirectory, f.Hostname, "ign")
 	if err != nil {
-		slog.Error("fcosCmd", "message", err.Error())
+		slog.Error("failed to create output file", "func", "writeFCOSIgnition", "error", err.Error())
 		return
 	}
 	defer fd.Close()
