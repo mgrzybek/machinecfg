@@ -1,5 +1,6 @@
 /*
-Copyright © 2025 NAME HERE <EMAIL ADDRESS>
+Copyright © 2025 Mathieu Grzybek <github@grzybek.fr>
+SPDX-License-Identifier: GPL-3.0-or-later
 */
 package main
 
