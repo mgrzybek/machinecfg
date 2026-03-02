@@ -12,19 +12,26 @@ import (
 func GetDevices(ctx *context.Context, client *netbox.APIClient, filters DeviceFilters) (devices *netbox.PaginatedDeviceWithConfigContextList, err error) {
 	var response *http.Response
 
-	switch {
-	case len(filters.Tenants) > 0 && filters.Tenants[0] != "" && len(filters.Locations) > 0 && filters.Locations[0] != "":
-		slog.Info("filtering devices by tenants and locations", "func", "GetDevices", "tenants", len(filters.Tenants), "locations", len(filters.Locations))
-		devices, response, err = client.DcimAPI.DcimDevicesList(*ctx).HasPrimaryIp(true).Status(filters.Status).Site(filters.Sites).Location(filters.Locations).Tenant(filters.Tenants).Role(filters.Roles).Execute()
-	case len(filters.Tenants) > 0 && filters.Tenants[0] != "":
-		slog.Info("filtering devices by tenants", "func", "GetDevices")
-		devices, response, err = client.DcimAPI.DcimDevicesList(*ctx).HasPrimaryIp(true).Status(filters.Status).Site(filters.Sites).Tenant(filters.Tenants).Role(filters.Roles).Execute()
-	case len(filters.Locations) > 0 && filters.Locations[0] != "":
-		slog.Info("filtering devices by locations", "func", "GetDevices")
-		devices, response, err = client.DcimAPI.DcimDevicesList(*ctx).HasPrimaryIp(true).Status(filters.Status).Site(filters.Sites).Location(filters.Locations).Role(filters.Roles).Execute()
-	default:
-		devices, response, err = client.DcimAPI.DcimDevicesList(*ctx).HasPrimaryIp(true).Status(filters.Status).Site(filters.Sites).Role(filters.Roles).Execute()
+	req := client.DcimAPI.DcimDevicesList(*ctx).
+		HasPrimaryIp(true).
+		Status(filters.Status).
+		Site(filters.Sites).
+		Role(filters.Roles)
+
+	if len(filters.Regions) > 0 && filters.Regions[0] != "" {
+		req = req.Region(filters.Regions)
 	}
+	if len(filters.Locations) > 0 && filters.Locations[0] != "" {
+		req = req.Location(filters.Locations)
+	}
+	if len(filters.Tenants) > 0 && filters.Tenants[0] != "" {
+		req = req.Tenant(filters.Tenants)
+	}
+	if len(filters.Racks) > 0 && filters.Racks[0] != 0 {
+		req = req.RackId(filters.Racks)
+	}
+
+	devices, response, err = req.Execute()
 
 	if err != nil {
 		if response != nil {

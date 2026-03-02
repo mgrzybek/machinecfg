@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -89,7 +90,7 @@ func processRootArgs(cmd *cobra.Command, requireOutputDirectory bool) *Configura
 	regions, _ := cmd.Flags().GetString("regions")
 	sites, _ := cmd.Flags().GetString("sites")
 	locations, _ := cmd.Flags().GetString("locations")
-	//racks, _ := cmd.Flags().GetString("racks")
+	racksStr, _ := cmd.Flags().GetString("racks")
 	tenants, _ := cmd.Flags().GetString("tenants")
 	roles, _ := cmd.Flags().GetString("roles")
 	virtualization, _ := cmd.Flags().GetBool("virtualization")
@@ -141,6 +142,19 @@ func processRootArgs(cmd *cobra.Command, requireOutputDirectory bool) *Configura
 		fatalError = true
 	}
 
+	var rackIDs []int32
+	for _, s := range strings.Split(racksStr, ",") {
+		if s != "" {
+			id, parseErr := strconv.ParseInt(s, 10, 32)
+			if parseErr != nil {
+				slog.Error("invalid rack id", "func", "processRootArgs", "value", s, "error", parseErr.Error())
+				fatalError = true
+			} else {
+				rackIDs = append(rackIDs, int32(id))
+			}
+		}
+	}
+
 	if fatalError {
 		os.Exit(1)
 	}
@@ -151,10 +165,10 @@ func processRootArgs(cmd *cobra.Command, requireOutputDirectory bool) *Configura
 		OutputDirectory: outputDirectory,
 
 		Filters: common.DeviceFilters{
-			Regions:   strings.Split(regions, ","),
-			Sites:     strings.Split(sites, ","),
-			Locations: strings.Split(locations, ","),
-			//Racks:
+			Regions:        strings.Split(regions, ","),
+			Sites:          strings.Split(sites, ","),
+			Locations:      strings.Split(locations, ","),
+			Racks:          rackIDs,
 			Tenants:        strings.Split(tenants, ","),
 			Roles:          strings.Split(roles, ","),
 			Virtualisation: virtualization,
