@@ -26,6 +26,9 @@ func CreateTalosConfigs(client *netbox.APIClient, ctx context.Context, filters c
 
 	filters.Status = []string{"active"}
 	devices, err = commonMachinecfg.GetDevices(&ctx, client, filters)
+	if err != nil {
+		return result, err
+	}
 
 	if devices.Count == 0 {
 		slog.Warn("CreateTalosConfigs", "message", "no device found, this must not be what you expected")

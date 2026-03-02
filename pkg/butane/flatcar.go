@@ -56,7 +56,11 @@ func CreateFlatcarIgnition(client *netbox.APIClient, ctx context.Context, device
 	device, response, err = client.DcimAPI.DcimDevicesList(ctx).Id([]int32{deviceID}).Execute()
 
 	if err != nil {
-		slog.Error("CreateFlatcar", "error", err.Error(), "message", response.Body)
+		if response != nil {
+			slog.Error("CreateFlatcar", "error", err.Error(), "message", response.Body)
+		} else {
+			slog.Error("CreateFlatcar", "error", err.Error())
+		}
 		return result, err
 	}
 
@@ -83,6 +87,9 @@ func CreateFlatcars(client *netbox.APIClient, ctx context.Context, filters commo
 
 	filters.Status = []string{"staged"}
 	devices, err = commonMachinecfg.GetDevices(&ctx, client, filters)
+	if err != nil {
+		return result, err
+	}
 
 	if devices.Count == 0 {
 		slog.Warn("CreateFlatcars", "message", "no device found, this must not be what you expected")

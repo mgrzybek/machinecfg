@@ -164,18 +164,11 @@ func processRootArgs(cmd *cobra.Command, requireOutputDirectory bool) *Configura
 }
 
 func dirExists(path string) bool {
-	dirStats, err := os.Stat(path)
+	_, err := os.Stat(path)
 	if err == nil {
 		return true
-	} else {
-		slog.Error("dirExists", "message", err.Error())
 	}
-	if os.IsNotExist(err) {
-		return false
-	}
-	if dirStats.IsDir() {
-		return true
-	}
+	slog.Error("dirExists", "message", err.Error())
 	return false
 }
 
