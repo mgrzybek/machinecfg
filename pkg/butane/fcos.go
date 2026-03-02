@@ -199,6 +199,5 @@ func generateFCOSIgnition(cfg *v1_6.Config) (result []byte) {
 }
 
 func GetFCOSIgnition(cfg *v1_6.Config) string {
-	ignitionBlob := generateFCOSIgnition(cfg)
-	return fmt.Sprintf("%s", ignitionBlob)
+	return string(generateFCOSIgnition(cfg))
 }

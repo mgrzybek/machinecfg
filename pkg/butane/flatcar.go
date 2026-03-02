@@ -318,6 +318,5 @@ func generateFlatcarIgnition(cfg *v1_1.Config) (result []byte) {
 }
 
 func GetFlatcarIgnition(cfg *v1_1.Config) string {
-	ignitionBlob := generateFlatcarIgnition(cfg)
-	return fmt.Sprintf("%s", ignitionBlob)
+	return string(generateFlatcarIgnition(cfg))
 }
