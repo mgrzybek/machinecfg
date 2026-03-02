@@ -28,23 +28,24 @@ var machineconfigCmd = &cobra.Command{
 
 		configs, _ := talos.CreateTalosConfigs(client, ctx, rootArguments.Filters)
 
-		var outputFileDescriptor *os.File
-		var err error
-
 		for _, c := range configs {
-			if rootArguments.OutputDirectory == "" {
-				outputFileDescriptor = os.Stdout
-			} else {
-				outputFileDescriptor, err = createFileDescriptor(rootArguments.OutputDirectory, c.Hostname, ".patch.yaml")
-			}
-			defer outputFileDescriptor.Close()
-			if err != nil {
-				slog.Error("machineconfigCmd", "message", err.Error())
-			} else {
-				talos.PrintYAMLFile(c.Config, outputFileDescriptor)
-			}
+			writeTalosConfig(&c, rootArguments.OutputDirectory)
 		}
 	},
+}
+
+func writeTalosConfig(c *talos.Talos, outputDirectory string) {
+	if outputDirectory == "" {
+		talos.PrintYAMLFile(c.Config, os.Stdout)
+		return
+	}
+	fd, err := createFileDescriptor(outputDirectory, c.Hostname, ".patch.yaml")
+	if err != nil {
+		slog.Error("machineconfigCmd", "message", err.Error())
+		return
+	}
+	defer fd.Close()
+	talos.PrintYAMLFile(c.Config, fd)
 }
 
 func init() {

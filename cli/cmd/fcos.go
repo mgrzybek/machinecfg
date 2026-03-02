@@ -28,23 +28,24 @@ var fcosCmd = &cobra.Command{
 
 		fcoss, _ := butane.CreateFCOSs(client, ctx, rootArguments.Filters)
 
-		var outputFileDescriptor *os.File
-		var err error
-
 		for _, f := range fcoss {
-			if rootArguments.OutputDirectory == "" {
-				outputFileDescriptor = os.Stdout
-			} else {
-				outputFileDescriptor, err = createFileDescriptor(rootArguments.OutputDirectory, f.Hostname, "ign")
-			}
-			defer outputFileDescriptor.Close()
-			if err != nil {
-				slog.Error("fcosCmd", "message", err.Error())
-			} else {
-				butane.PrintFCOSIgnitionFile(&f.Config, outputFileDescriptor)
-			}
+			writeFCOSIgnition(&f, rootArguments.OutputDirectory)
 		}
 	},
+}
+
+func writeFCOSIgnition(f *butane.FCOS, outputDirectory string) {
+	if outputDirectory == "" {
+		butane.PrintFCOSIgnitionFile(&f.Config, os.Stdout)
+		return
+	}
+	fd, err := createFileDescriptor(outputDirectory, f.Hostname, "ign")
+	if err != nil {
+		slog.Error("fcosCmd", "message", err.Error())
+		return
+	}
+	defer fd.Close()
+	butane.PrintFCOSIgnitionFile(&f.Config, fd)
 }
 
 func init() {

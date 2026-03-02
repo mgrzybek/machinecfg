@@ -28,23 +28,24 @@ var flatcarCmd = &cobra.Command{
 
 		flatcars, _ := butane.CreateFlatcars(client, ctx, rootArguments.Filters)
 
-		var outputFileDescriptor *os.File
-		var err error
-
 		for _, f := range flatcars {
-			if rootArguments.OutputDirectory == "" {
-				outputFileDescriptor = os.Stdout
-			} else {
-				outputFileDescriptor, err = createFileDescriptor(rootArguments.OutputDirectory, f.Hostname, "ign")
-			}
-			defer outputFileDescriptor.Close()
-			if err != nil {
-				slog.Error("flatcarCmd", "message", err.Error())
-			} else {
-				butane.PrintFlatcarIgnitionFile(&f.Config, outputFileDescriptor)
-			}
+			writeFlatcarIgnition(&f, rootArguments.OutputDirectory)
 		}
 	},
+}
+
+func writeFlatcarIgnition(f *butane.Flatcar, outputDirectory string) {
+	if outputDirectory == "" {
+		butane.PrintFlatcarIgnitionFile(&f.Config, os.Stdout)
+		return
+	}
+	fd, err := createFileDescriptor(outputDirectory, f.Hostname, "ign")
+	if err != nil {
+		slog.Error("flatcarCmd", "message", err.Error())
+		return
+	}
+	defer fd.Close()
+	butane.PrintFlatcarIgnitionFile(&f.Config, fd)
 }
 
 func init() {
