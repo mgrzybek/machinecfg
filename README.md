@@ -129,6 +129,32 @@ Or target a single machine by hostname:
 
 The aliases `allow-pxe` and `deny-pxe` are also available for `pxe-allow` and `pxe-deny` respectively.
 
+### Show Hardware objects
+
+Display all Hardware objects in a namespace with their PXE and Workflow boot settings:
+
+```bash
+./machinecfg tinkerbell hardware show \
+    --namespace tinkerbell-system
+```
+
+Example output:
+
+```
+HOSTNAME           STATUS    ALLOW-PXE   WORKFLOW
+server-paris-01    staged    true        true
+server-paris-02    active    false       false
+server-paris-03    offline   false       false
+```
+
+Or inspect a single machine:
+
+```bash
+./machinecfg tinkerbell hardware show \
+    --namespace tinkerbell-system \
+    --hostname server-paris-02
+```
+
 ### Create Ignition files
 
 Write an `.ign` file per device into `/tmp`, using Flatcar variant.
