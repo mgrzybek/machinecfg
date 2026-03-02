@@ -27,7 +27,11 @@ func GetDevices(ctx *context.Context, client *netbox.APIClient, filters DeviceFi
 	}
 
 	if err != nil {
-		slog.Error("GetDevices", "error", err.Error(), "message", response.Body, "code", response.StatusCode)
+		if response != nil {
+			slog.Error("GetDevices", "error", err.Error(), "message", response.Body, "code", response.StatusCode)
+		} else {
+			slog.Error("GetDevices", "error", err.Error())
+		}
 	}
 
 	return devices, err
@@ -38,9 +42,7 @@ func GetTaggedAddressesFromPrefixOfAddr(ctx *context.Context, client *netbox.API
 
 	if err != nil {
 		slog.Error("getTaggedAddressesFromPrefixOfAddr", "message", err.Error())
-	}
-
-	if response.StatusCode != 200 {
+	} else if response.StatusCode != 200 {
 		slog.Error("getTaggedAddressesFromPrefixOfAddr", "message", response.Body, "code", response.StatusCode)
 	}
 
