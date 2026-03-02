@@ -52,7 +52,11 @@ When device is in offline or planned status, it is deleted.`,
 		ctx := context.Background()
 		client := netbox.NewAPIClientFor(rootArguments.Endpoint, rootArguments.Token)
 
-		hardwares, _ := tinkerbell.CreateHardwares(client, ctx, rootArguments.Filters, hardwareArguments.EmbeddedIgnitionVariant)
+		hardwares, err := tinkerbell.CreateHardwares(client, ctx, rootArguments.Filters, hardwareArguments.EmbeddedIgnitionVariant)
+		if err != nil {
+			slog.Error("hardwareCmd", "message", err.Error())
+			os.Exit(1)
+		}
 		for _, h := range hardwares {
 			if k8sClient == nil {
 				printYAMLFile(&h, rootArguments, hardwareArguments)
@@ -77,7 +81,11 @@ When device is in offline or planned status, it is deleted.`,
 			successCounter = 0
 			failureCounter = 0
 
-			hardwares, _ := tinkerbell.CreateHardwaresToPrune(client, ctx, rootArguments.Filters)
+			hardwares, err := tinkerbell.CreateHardwaresToPrune(client, ctx, rootArguments.Filters)
+			if err != nil {
+				slog.Error("hardwareCmd", "message", err.Error())
+				os.Exit(1)
+			}
 			for _, h := range hardwares {
 				err = k8sClient.Delete(ctx, &h)
 				if err != nil {

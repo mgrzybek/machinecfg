@@ -26,7 +26,11 @@ var fcosCmd = &cobra.Command{
 		ctx := context.Background()
 		client := netbox.NewAPIClientFor(rootArguments.Endpoint, rootArguments.Token)
 
-		fcoss, _ := butane.CreateFCOSs(client, ctx, rootArguments.Filters)
+		fcoss, err := butane.CreateFCOSs(client, ctx, rootArguments.Filters)
+		if err != nil {
+			slog.Error("fcosCmd", "message", err.Error())
+			os.Exit(1)
+		}
 
 		for _, f := range fcoss {
 			writeFCOSIgnition(&f, rootArguments.OutputDirectory)

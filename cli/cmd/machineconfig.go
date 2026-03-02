@@ -26,7 +26,11 @@ var machineconfigCmd = &cobra.Command{
 		ctx := context.Background()
 		client := netbox.NewAPIClientFor(rootArguments.Endpoint, rootArguments.Token)
 
-		configs, _ := talos.CreateTalosConfigs(client, ctx, rootArguments.Filters)
+		configs, err := talos.CreateTalosConfigs(client, ctx, rootArguments.Filters)
+		if err != nil {
+			slog.Error("machineconfigCmd", "message", err.Error())
+			os.Exit(1)
+		}
 
 		for _, c := range configs {
 			writeTalosConfig(&c, rootArguments.OutputDirectory)

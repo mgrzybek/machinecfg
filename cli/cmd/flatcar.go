@@ -26,7 +26,11 @@ var flatcarCmd = &cobra.Command{
 		ctx := context.Background()
 		client := netbox.NewAPIClientFor(rootArguments.Endpoint, rootArguments.Token)
 
-		flatcars, _ := butane.CreateFlatcars(client, ctx, rootArguments.Filters)
+		flatcars, err := butane.CreateFlatcars(client, ctx, rootArguments.Filters)
+		if err != nil {
+			slog.Error("flatcarCmd", "message", err.Error())
+			os.Exit(1)
+		}
 
 		for _, f := range flatcars {
 			writeFlatcarIgnition(&f, rootArguments.OutputDirectory)
