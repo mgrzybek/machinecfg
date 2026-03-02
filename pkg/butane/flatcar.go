@@ -185,8 +185,10 @@ func setValuesToNetworkDevice(ctx *context.Context, client *netbox.APIClient, fi
 		dnsAddresses := commonMachinecfg.GetTaggedAddressesFromPrefixOfAddr(ctx, client, "dns", ipAddr)
 		for _, addr := range dnsAddresses {
 			result.Network.DNS = append(result.Network.DNS, strings.Split(addr.Address, "/")[0])
-			result.Network.Domains = append(result.Network.Domains, fmt.Sprint(prefix.CustomFields["SearchDomain"]))
 			result.Network.DNSDefaultRoute = "no"
+		}
+		if len(dnsAddresses) > 0 && prefix.CustomFields["Domains"] != nil {
+			result.Network.Domains = append(result.Network.Domains, fmt.Sprint(prefix.CustomFields["Domains"]))
 		}
 	}
 
