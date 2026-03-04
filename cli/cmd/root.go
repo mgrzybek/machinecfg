@@ -201,10 +201,10 @@ func getK8sClient() (client.Client, error) {
 		if err != nil {
 			return nil, fmt.Errorf("cannot find any kubeconfig: %w", err)
 		} else {
-			slog.Info("out-of-cluster configuration found", "func", "getK8sClient", "kubeconfig", kubeconfig)
+			slog.Debug("out-of-cluster configuration found", "func", "getK8sClient", "kubeconfig", kubeconfig)
 		}
 	} else {
-		slog.Info("in-cluster configuration found", "func", "getK8sClient")
+		slog.Debug("in-cluster configuration found", "func", "getK8sClient")
 	}
 
 	scheme = runtime.NewScheme()
