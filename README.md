@@ -55,6 +55,8 @@ MachineCFG requires access to your NetBox instance. Set the following environmen
 
 A custom field called `Domains` can be added to `IPAM/Prefix` in order to manage `systemd-networkd` option [Domains](https://www.freedesktop.org/software/systemd/man/latest/systemd.network.html#Domains=).
 
+The hostname set in `/etc/hostname` of generated Ignition files is derived from the **DNS name** of the device's primary IPv4 address (or primary IP if no IPv4 is set). If no DNS name is configured, the device name is used as a fallback.
+
 Netbox-side, devices' statuses are very important. They allow the tool to know which device to create and delete.
 
 | Device status   | Tinkerbell action
@@ -140,7 +142,7 @@ Display all Hardware objects in a namespace with their PXE and Workflow boot set
 
 Example output:
 
-```
+```console
 HOSTNAME           STATUS    ALLOW-PXE   WORKFLOW
 server-paris-01    staged    true        true
 server-paris-02    active    false       false

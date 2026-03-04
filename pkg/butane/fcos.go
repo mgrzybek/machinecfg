@@ -125,7 +125,8 @@ func extractFCOSData(ctx context.Context, c *netbox.APIClient, device *netbox.De
 	dcimFile := createDCIMFile(device)
 
 	files = append(files, v0_6.File{Path: "/etc/dcim.yaml", Contents: v0_6.Resource{Inline: &dcimFile}})
-	files = append(files, v0_6.File{Path: "/etc/hostname", Contents: v0_6.Resource{Inline: device.Name.Get()}})
+	hostname := getHostname(ctx, c, device)
+	files = append(files, v0_6.File{Path: "/etc/hostname", Contents: v0_6.Resource{Inline: &hostname}})
 
 	return &v1_6.Config{
 		Config: v0_6.Config{

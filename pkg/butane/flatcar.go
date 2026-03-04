@@ -162,7 +162,8 @@ func extractFlatcarData(ctx context.Context, c *netbox.APIClient, device *netbox
 	dcimFile := createDCIMFile(device)
 
 	files = append(files, v0_5.File{Path: "/etc/dcim.yaml", Contents: v0_5.Resource{Inline: &dcimFile}})
-	files = append(files, v0_5.File{Path: "/etc/hostname", Contents: v0_5.Resource{Inline: device.Name.Get()}})
+	hostname := getHostname(ctx, c, device)
+	files = append(files, v0_5.File{Path: "/etc/hostname", Contents: v0_5.Resource{Inline: &hostname}})
 
 	return &v1_1.Config{
 		Config: v0_5.Config{
