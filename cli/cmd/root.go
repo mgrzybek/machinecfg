@@ -49,7 +49,7 @@ func Execute() {
 
 func init() {
 	// Generic options
-	rootCmd.PersistentFlags().StringP("log-level", "", "", "Log level ’development’ (default) or ’production’")
+	rootCmd.PersistentFlags().StringP("log-level", "", "", "Log level ‘production’ (default) or ‘development’")
 	rootCmd.PersistentFlags().StringP("netbox-token", "", "", "Token used to call Netbox API")
 	rootCmd.PersistentFlags().StringP("netbox-endpoint", "", "", "URL of the API")
 	rootCmd.PersistentFlags().StringP("output-directory", "", "", "Where to write the result")
@@ -73,12 +73,12 @@ func configureLogger(cmd *cobra.Command) {
 	logLevel, _ := cmd.Flags().GetString("log-level")
 
 	switch strings.ToLower(logLevel) {
-	case "info", "production":
+	case "debug", "development":
+		slog.SetLogLoggerLevel(slog.LevelDebug)
+	default:
 		handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})
 		logger := slog.New(handler)
 		slog.SetDefault(logger)
-	default:
-		slog.SetLogLoggerLevel(slog.LevelDebug)
 	}
 }
 
