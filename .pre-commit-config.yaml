@@ -13,9 +13,15 @@ repos:
   hooks:
   - id: gitleaks
 - repo: https://github.com/dnephin/pre-commit-golang
-  rev: v0.5.1 # Vérifiez la dernière version disponible
+  rev: v0.5.1
   hooks:
   -   id: go-fmt
   -   id: go-imports
-  -   id: go-vet
-  -   id: go-build
+- repo: local
+  hooks:
+  - id: go-vet
+    name: go vet
+    entry: go vet ./...
+    language: system
+    pass_filenames: false
+    types: [go]

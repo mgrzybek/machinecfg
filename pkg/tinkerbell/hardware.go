@@ -106,7 +106,7 @@ func extractHardwareData(ctx context.Context, c *netbox.APIClient, device *netbo
 	allowWorkflow := true
 
 	if !device.PrimaryIp4.IsSet() {
-		return nil, fmt.Errorf("device %s does not have any primary IPv4 address", device.Name)
+		return nil, fmt.Errorf("device %s does not have any primary IPv4 address", *device.Name.Get())
 	}
 
 	ipAddress := getAddrFromCIDR(device.PrimaryIp4.Get().Address)
