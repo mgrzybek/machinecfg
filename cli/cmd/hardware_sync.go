@@ -42,7 +42,8 @@ When device is in offline or planned status, it is deleted.`,
 		rootArguments := processRootArgs(cmd, false)
 		hardwareArguments := processHardwareArgs(cmd)
 
-		k8sClient, err := getK8sClient()
+		kubeconfig, _ := cmd.Flags().GetString("kubeconfig")
+		k8sClient, err := getK8sClient(kubeconfig)
 		if err != nil {
 			if !dirExists(rootArguments.OutputDirectory) {
 				slog.Error("no output directory and no k8s configuration found", "func", "syncCmd")

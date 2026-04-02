@@ -28,8 +28,9 @@ The command stops at the first error encountered.`,
 
 		namespace, _ := cmd.Flags().GetString("namespace")
 		hostname, _ := cmd.Flags().GetString("hostname")
+		kubeconfig, _ := cmd.Flags().GetString("kubeconfig")
 
-		k8sClient, err := getK8sClient()
+		k8sClient, err := getK8sClient(kubeconfig)
 		if err != nil {
 			slog.Error("no k8s configuration found", "func", "pxeAllowCmd", "error", err.Error())
 			os.Exit(1)
@@ -56,7 +57,8 @@ The command stops at the first error encountered.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		configureLogger(cmd)
 
-		k8sClient, err := getK8sClient()
+		kubeconfig, _ := cmd.Flags().GetString("kubeconfig")
+		k8sClient, err := getK8sClient(kubeconfig)
 		if err != nil {
 			slog.Error("no k8s configuration found", "func", "pxeDenyCmd", "error", err.Error())
 			os.Exit(1)

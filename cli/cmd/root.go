@@ -67,6 +67,9 @@ func init() {
 
 	// Physical or virtual devices?
 	rootCmd.PersistentFlags().BoolP("virtualization", "", false, "Use the virtual machines' inventory instead of the physical devices")
+
+	// Kubernetes configuration
+	rootCmd.PersistentFlags().StringP("kubeconfig", "", "", "Path to kubeconfig file (overrides KUBECONFIG env var)")
 }
 
 func configureLogger(cmd *cobra.Command) {
@@ -87,6 +90,13 @@ func processRootArgs(cmd *cobra.Command, requireOutputDirectory bool) *Configura
 	endpoint, _ := cmd.Flags().GetString("netbox-endpoint")
 	token, _ := cmd.Flags().GetString("netbox-token")
 	outputDirectory, _ := cmd.Flags().GetString("output-directory")
+
+	if endpoint == "" {
+		endpoint = os.Getenv("NETBOX_URL")
+	}
+	if token == "" {
+		token = os.Getenv("NETBOX_TOKEN")
+	}
 
 	regions, _ := cmd.Flags().GetString("regions")
 	sites, _ := cmd.Flags().GetString("sites")
@@ -186,7 +196,7 @@ func createFileDescriptor(dirPath, filename, extension string) (*os.File, error)
 	return os.Create(outputPath)
 }
 
-func getK8sClient() (client.Client, error) {
+func getK8sClient(kubeconfigOverride string) (client.Client, error) {
 	var config *rest.Config
 	var scheme *runtime.Scheme
 	var err error
@@ -195,7 +205,7 @@ func getK8sClient() (client.Client, error) {
 	if err != nil {
 		slog.Debug("in-cluster config failed, trying out-of-cluster", "func", "getK8sClient")
 
-		kubeconfig := getKubeconfigPath()
+		kubeconfig := getKubeconfigPath(kubeconfigOverride)
 
 		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
 		if err != nil {
@@ -218,7 +228,10 @@ func getK8sClient() (client.Client, error) {
 	return client.New(config, client.Options{Scheme: scheme})
 }
 
-func getKubeconfigPath() string {
+func getKubeconfigPath(override string) string {
+	if override != "" {
+		return override
+	}
 	kubeconfig := os.Getenv("KUBECONFIG")
 	if kubeconfig == "" {
 		kubeconfig = os.Getenv("HOME") + "/.kube/config"

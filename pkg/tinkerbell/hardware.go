@@ -208,7 +208,7 @@ func createMetaFromDevice(device *netbox.DeviceWithConfigContext) v1.ObjectMeta 
 	if tenant == nil {
 		namespace = "default"
 	} else {
-		namespace = strings.ToLower(tenant.Name)
+		namespace = tenant.Slug
 	}
 
 	return v1.ObjectMeta{

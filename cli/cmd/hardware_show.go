@@ -6,6 +6,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
@@ -29,8 +30,10 @@ If --hostname is not provided, all Hardware objects in the namespace are listed.
 
 		namespace, _ := cmd.Flags().GetString("namespace")
 		hostname, _ := cmd.Flags().GetString("hostname")
+		output, _ := cmd.Flags().GetString("output")
 
-		k8sClient, err := getK8sClient()
+		kubeconfig, _ := cmd.Flags().GetString("kubeconfig")
+		k8sClient, err := getK8sClient(kubeconfig)
 		if err != nil {
 			slog.Error("no k8s configuration found", "func", "showCmd", "error", err.Error())
 			os.Exit(1)
@@ -44,19 +47,43 @@ If --hostname is not provided, all Hardware objects in the namespace are listed.
 			os.Exit(1)
 		}
 
-		w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-		fmt.Fprintln(w, "HOSTNAME\tSTATUS\tALLOW-PXE\tWORKFLOW")
-
-		for _, hw := range hardwares {
-			status := hw.Labels["status"]
-			for _, iface := range hw.Spec.Interfaces {
-				allowPXE := iface.Netboot != nil && iface.Netboot.AllowPXE != nil && *iface.Netboot.AllowPXE
-				workflow := iface.Netboot != nil && iface.Netboot.AllowWorkflow != nil && *iface.Netboot.AllowWorkflow
-				fmt.Fprintf(w, "%s\t%s\t%t\t%t\n", hw.Name, status, allowPXE, workflow)
+		if output == "json" {
+			type hwRow struct {
+				Hostname string `json:"hostname"`
+				Status   string `json:"status"`
+				AllowPXE bool   `json:"allow-pxe"`
+				Workflow bool   `json:"workflow"`
 			}
-		}
+			var rows []hwRow
+			for _, hw := range hardwares {
+				status := hw.Labels["status"]
+				for _, iface := range hw.Spec.Interfaces {
+					allowPXE := iface.Netboot != nil && iface.Netboot.AllowPXE != nil && *iface.Netboot.AllowPXE
+					workflow := iface.Netboot != nil && iface.Netboot.AllowWorkflow != nil && *iface.Netboot.AllowWorkflow
+					rows = append(rows, hwRow{Hostname: hw.Name, Status: status, AllowPXE: allowPXE, Workflow: workflow})
+				}
+			}
+			jsonData, err := json.Marshal(rows)
+			if err != nil {
+				slog.Error("failed to marshal json", "func", "showCmd", "error", err.Error())
+				os.Exit(1)
+			}
+			fmt.Println(string(jsonData))
+		} else {
+			w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
+			fmt.Fprintln(w, "HOSTNAME\tSTATUS\tALLOW-PXE\tWORKFLOW")
 
-		w.Flush()
+			for _, hw := range hardwares {
+				status := hw.Labels["status"]
+				for _, iface := range hw.Spec.Interfaces {
+					allowPXE := iface.Netboot != nil && iface.Netboot.AllowPXE != nil && *iface.Netboot.AllowPXE
+					workflow := iface.Netboot != nil && iface.Netboot.AllowWorkflow != nil && *iface.Netboot.AllowWorkflow
+					fmt.Fprintf(w, "%s\t%s\t%t\t%t\n", hw.Name, status, allowPXE, workflow)
+				}
+			}
+
+			w.Flush()
+		}
 	},
 }
 
@@ -65,4 +92,5 @@ func init() {
 	showCmd.Flags().String("namespace", "", "Kubernetes namespace containing the Hardware objects")
 	showCmd.MarkFlagRequired("namespace")
 	showCmd.Flags().String("hostname", "", "Name of the Hardware object to show (optional, all objects if omitted)")
+	showCmd.Flags().String("output", "table", "Output format: table or json")
 }
