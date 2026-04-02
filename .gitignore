@@ -26,8 +26,10 @@ go.work.sum
 .env
 
 # Temporary directory
+tmp/
 
 # Editors
 .vscode
-tmp/
 .task
+.claude
+ROADMAP.md
