@@ -69,7 +69,12 @@ When device is in offline or planned status, it is deleted.`,
 						slog.Error("failed to create k8s object", "func", "syncCmd", "error", err.Error(), "namespace", h.Namespace, "device", h.Name)
 						failureCounter = failureCounter + 1
 					} else {
-						successCounter = successCounter + 1
+						if reconcileErr := tinkerbell.ReconcileExistingHardware(k8sClient, ctx, &h, client); reconcileErr != nil {
+							slog.Error("failed to reconcile existing Hardware", "func", "syncCmd", "error", reconcileErr.Error(), "namespace", h.Namespace, "device", h.Name)
+							failureCounter = failureCounter + 1
+						} else {
+							successCounter = successCounter + 1
+						}
 					}
 				} else {
 					successCounter = successCounter + 1

@@ -10,11 +10,13 @@ import (
 	"log/slog"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 	"text/template"
 
 	"github.com/netbox-community/go-netbox/v4"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
 	"machinecfg/pkg/butane"
@@ -211,23 +213,31 @@ func createMetaFromDevice(device *netbox.DeviceWithConfigContext) v1.ObjectMeta 
 		namespace = tenant.Slug
 	}
 
+	labels := map[string]string{
+		"generated-by": "machinecfg",
+
+		"netbox-device-id": strconv.Itoa(int(device.Id)),
+
+		"serial": *device.Serial,
+		"model":  device.DeviceType.Slug,
+		"role":   device.Role.GetName(),
+
+		"site":     device.Site.GetName(),
+		"location": device.Location.Get().GetName(),
+		"racks":    device.Rack.Get().GetName(),
+
+		"tenant": device.Tenant.Get().GetName(),
+		"status": string(device.Status.GetLabel()),
+	}
+
+	if cluster := device.Cluster.Get(); cluster != nil {
+		labels["cluster"] = cluster.GetName()
+	}
+
 	return v1.ObjectMeta{
 		Name:      *device.Name.Get(),
 		Namespace: namespace,
-		Labels: map[string]string{
-			"generated-by": "machinecfg",
-
-			"serial": *device.Serial,
-			"model":  device.DeviceType.Slug,
-			"role":   device.Role.GetName(),
-
-			"site":     device.Site.GetName(),
-			"location": device.Location.Get().GetName(),
-			"racks":    device.Rack.Get().GetName(),
-
-			"tenant": device.Tenant.Get().GetName(),
-			"status": string(device.Status.GetLabel()),
-		},
+		Labels:    labels,
 	}
 }
 
@@ -290,4 +300,53 @@ func CreateHardwaresToPrune(client *netbox.APIClient, ctx context.Context, filte
 	}
 
 	return result, err
+}
+
+// ReconcileExistingHardware reconciles an already-existing Hardware object with the
+// desired state derived from NetBox:
+//   - If the netbox-device-id label is missing or stale, it is patched to match desired.
+//   - If the Hardware carries the provisioned annotation, the corresponding NetBox device
+//     is transitioned to "active".
+func ReconcileExistingHardware(k8sClient client.Client, ctx context.Context, desired *tinkerbellKubeObjects.Hardware, netboxClient *netbox.APIClient) error {
+	existing := &tinkerbellKubeObjects.Hardware{}
+	if err := k8sClient.Get(ctx, client.ObjectKey{Namespace: desired.Namespace, Name: desired.Name}, existing); err != nil {
+		return fmt.Errorf("cannot get existing Hardware %s/%s: %w", desired.Namespace, desired.Name, err)
+	}
+
+	// Reconcile all labels from the desired state onto the existing object.
+	// Labels set by other controllers (e.g. Tinkerbell owner labels) are preserved
+	// because we only update keys present in desired, never remove others.
+	needsPatch := false
+	patch := client.MergeFrom(existing.DeepCopy())
+	if existing.Labels == nil {
+		existing.Labels = make(map[string]string)
+	}
+	for key, desiredVal := range desired.Labels {
+		if existing.Labels[key] != desiredVal {
+			existing.Labels[key] = desiredVal
+			needsPatch = true
+		}
+	}
+	if needsPatch {
+		if err := k8sClient.Patch(ctx, existing, patch); err != nil {
+			return fmt.Errorf("cannot patch labels on %s/%s: %w", existing.Namespace, existing.Name, err)
+		}
+		slog.Info("labels reconciled", "func", "ReconcileExistingHardware", "name", existing.Name, "namespace", existing.Namespace)
+	}
+
+	if existing.Annotations[annotationProvisioned] == "true" {
+		deviceID64, err := strconv.ParseInt(desired.Labels["netbox-device-id"], 10, 32)
+		if err != nil {
+			return fmt.Errorf("invalid netbox-device-id %q on %s/%s: %w", desired.Labels["netbox-device-id"], existing.Namespace, existing.Name, err)
+		}
+		updated, err := setDeviceActive(ctx, netboxClient, int32(deviceID64))
+		if err != nil {
+			return fmt.Errorf("cannot transition NetBox device %d to active: %w", deviceID64, err)
+		}
+		if updated {
+			slog.Info("NetBox device transitioned to active", "func", "ReconcileExistingHardware", "name", existing.Name, "device_id", deviceID64)
+		}
+	}
+
+	return nil
 }

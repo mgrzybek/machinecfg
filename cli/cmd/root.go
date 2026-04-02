@@ -6,6 +6,7 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"strconv"
@@ -79,10 +80,33 @@ func configureLogger(cmd *cobra.Command) {
 	case "debug", "development":
 		slog.SetLogLoggerLevel(slog.LevelDebug)
 	default:
+		// Suppress logs when no explicit log level was requested and either:
+		// - stdout is an interactive terminal (clean human-readable output), or
+		// - --output json is set (avoid corrupting the JSON stream when piped).
+		if logLevel == "" && (isInteractiveTerminal() || isJSONOutput(cmd)) {
+			slog.SetDefault(slog.New(slog.NewJSONHandler(io.Discard, nil)))
+			return
+		}
 		handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})
 		logger := slog.New(handler)
 		slog.SetDefault(logger)
 	}
+}
+
+// isInteractiveTerminal reports whether stdout is connected to a terminal.
+func isInteractiveTerminal() bool {
+	fi, err := os.Stdout.Stat()
+	if err != nil {
+		return false
+	}
+	return (fi.Mode() & os.ModeCharDevice) != 0
+}
+
+// isJSONOutput reports whether the command was invoked with --output json.
+// Returns false if the flag is not defined on this command.
+func isJSONOutput(cmd *cobra.Command) bool {
+	output, err := cmd.Flags().GetString("output")
+	return err == nil && output == "json"
 }
 
 func processRootArgs(cmd *cobra.Command, requireOutputDirectory bool) *ConfigurationArgs {
@@ -92,7 +116,7 @@ func processRootArgs(cmd *cobra.Command, requireOutputDirectory bool) *Configura
 	outputDirectory, _ := cmd.Flags().GetString("output-directory")
 
 	if endpoint == "" {
-		endpoint = os.Getenv("NETBOX_URL")
+		endpoint = os.Getenv("NETBOX_ENDPOINT")
 	}
 	if token == "" {
 		token = os.Getenv("NETBOX_TOKEN")
