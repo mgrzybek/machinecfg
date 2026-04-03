@@ -18,7 +18,44 @@ It automates the generation of configuration files by fetching hardware data and
 * **Talos Linux Automation:** Generates the necessary Machine patches to manage networking.
 * **Infrastructure as Code:** Ensures your physical deployment matches your "Source of Truth".
 
-![Architecture](docs/architecture.svg)
+```mermaid
+flowchart LR
+    NB[(NetBox<br>DCIM · IPAM)]
+
+    subgraph mcfg[machinecfg]
+        TB[tinkerbell<br>hardware sync]
+        TL[talos<br>machineconfig]
+        BT[butane / ignition]
+    end
+
+    subgraph out[Generated objects]
+        HW[Hardware<br>objects]
+        MC[MachineConfig<br>patches]
+        IGN[Ignition<br>files]
+    end
+
+    subgraph targets[Target systems]
+        TBK[Tinkerbell<br>k8s cluster]
+        TALOS[Talos<br>nodes]
+        LX[Flatcar · CoreOS<br>SLE Micro]
+    end
+
+    NB -->|devices| TB
+    NB -->|devices| TL
+    NB -->|devices| BT
+
+    TB --> HW
+    TL --> MC
+    BT --> IGN
+
+    HW --> TBK
+    TBK -->|PXE provision| LX
+    MC --> TALOS
+    IGN -->|cloud-init| LX
+
+    TBK -.->|provisioned annotation| TB
+    TB -.->|device → active| NB
+```
 
 ## 🚀 Getting Started
 
