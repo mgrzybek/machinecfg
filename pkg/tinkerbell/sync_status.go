@@ -25,9 +25,11 @@ type SyncStatusResult struct {
 	Error    string `json:"error,omitempty"`
 }
 
-// SyncStatus lists all Hardware objects in the given namespace and, for each one
-// whose annotation v1alpha1.tinkerbell.org/provisioned is "true", transitions the
-// corresponding NetBox device from staged to active.
+// SyncStatus lists all Hardware objects in the given namespace and reconciles each
+// NetBox device status according to the provisioned annotation:
+//   - annotation == "true"  → transition NetBox device to "active"
+//   - annotation absent     → transition NetBox device to "staged"
+//
 // Errors on individual devices are recorded in the result slice; the function
 // continues processing remaining devices and only returns a fatal error when the
 // initial Kubernetes list call fails.
@@ -45,7 +47,13 @@ func SyncStatus(k8sClient client.Client, ctx context.Context, namespace string, 
 	var results []SyncStatusResult
 
 	for _, hw := range hwList.Items {
-		if hw.Annotations[annotationProvisioned] != "true" {
+		annotationVal, annotationExists := hw.Annotations[annotationProvisioned]
+
+		// Only handle the two explicit cases; ignore any other annotation value.
+		isProvisioned := annotationExists && annotationVal == "true"
+		isUnprovisioned := !annotationExists
+
+		if !isProvisioned && !isUnprovisioned {
 			continue
 		}
 
@@ -69,14 +77,26 @@ func SyncStatus(k8sClient client.Client, ctx context.Context, namespace string, 
 
 		result.DeviceID = int32(deviceID64)
 
-		updated, err := setDeviceActive(ctx, netboxClient, result.DeviceID)
+		var (
+			updated    bool
+			targetName string
+		)
+
+		if isProvisioned {
+			updated, err = setDeviceStatus(ctx, netboxClient, result.DeviceID, netbox.DEVICESTATUSVALUE_ACTIVE)
+			targetName = "active"
+		} else {
+			updated, err = setDeviceStatus(ctx, netboxClient, result.DeviceID, netbox.DEVICESTATUSVALUE_STAGED)
+			targetName = "staged"
+		}
+
 		if err != nil {
 			result.Error = err.Error()
 			slog.Error("failed to update NetBox device status", "func", "SyncStatus", "name", hw.Name, "device_id", result.DeviceID, "error", err.Error())
 		} else {
 			result.Updated = updated
 			if updated {
-				slog.Info("NetBox device transitioned to active", "func", "SyncStatus", "name", hw.Name, "device_id", result.DeviceID)
+				slog.Info("NetBox device status updated", "func", "SyncStatus", "name", hw.Name, "device_id", result.DeviceID, "status", targetName)
 			}
 		}
 
@@ -86,22 +106,23 @@ func SyncStatus(k8sClient client.Client, ctx context.Context, namespace string, 
 	return results, nil
 }
 
-// setDeviceActive transitions a NetBox device to "active" only if its current status
-// is "staged". Returns (true, nil) if the transition was applied, (false, nil) if no
-// change was needed, or (false, err) on API failure.
-func setDeviceActive(ctx context.Context, netboxClient *netbox.APIClient, deviceID int32) (bool, error) {
+// setDeviceStatus transitions a NetBox device to targetStatus only if its current
+// status is not already targetStatus. Returns (true, nil) if the transition was
+// applied, (false, nil) if already at target (no change needed), or (false, err)
+// on API failure.
+func setDeviceStatus(ctx context.Context, netboxClient *netbox.APIClient, deviceID int32, targetStatus netbox.DeviceStatusValue) (bool, error) {
 	device, _, err := netboxClient.DcimAPI.DcimDevicesRetrieve(ctx, deviceID).Execute()
 	if err != nil {
 		return false, fmt.Errorf("cannot retrieve NetBox device %d: %w", deviceID, err)
 	}
 
-	status := device.GetStatus()
-	if status.GetValue() != netbox.DEVICESTATUSVALUE_STAGED {
+	current := device.GetStatus()
+	if current.GetValue() == targetStatus {
 		return false, nil
 	}
 
 	patch := netbox.NewPatchedWritableDeviceWithConfigContextRequest()
-	patch.SetStatus(netbox.DEVICESTATUSVALUE_ACTIVE)
+	patch.SetStatus(targetStatus)
 
 	_, _, err = netboxClient.DcimAPI.DcimDevicesPartialUpdate(ctx, deviceID).
 		PatchedWritableDeviceWithConfigContextRequest(*patch).

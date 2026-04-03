@@ -11,17 +11,15 @@ tasks:
     - cd cli && go build -o ../machinecfg
 
   test:
-    desc: Run tests
-    deps: [ "cli" ]
-    vars:
-      root_opts: --sites=maison --roles=cattle
-      netbox_opts: --netbox-endpoint=$NETBOX_ENDPOINT --netbox-token=$NETBOX_TOKEN
-      output_opts: --output-directory=tmp
-
+    desc: Run unit and integration tests
+    preconditions:
+    - |
+      if [ -z "$NETBOX_TOKEN" ] || [ -z "$NETBOX_ENDPOINT" ]; then
+        echo "WARNING: NETBOX_TOKEN and/or NETBOX_ENDPOINT are not set — integration tests will be skipped"
+      fi
     cmds:
-    - ./machinecfg {{.root_opts}} tinkerbell hardware sync {{.netbox_opts}} {{.output_opts}} --embed-ignition-as-vendor-data=true
-    - ./machinecfg {{.root_opts}} butane flatcar {{.netbox_opts}} {{.output_opts}}
-    - ./machinecfg {{.root_opts}} talos machineconfig {{.netbox_opts}} {{.output_opts}}
+    - go test ./...
+    - go test -tags integration ./...
 
   clean-tmp:
     desc: Remove temporary files

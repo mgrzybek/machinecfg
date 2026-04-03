@@ -339,7 +339,7 @@ func ReconcileExistingHardware(k8sClient client.Client, ctx context.Context, des
 		if err != nil {
 			return fmt.Errorf("invalid netbox-device-id %q on %s/%s: %w", desired.Labels["netbox-device-id"], existing.Namespace, existing.Name, err)
 		}
-		updated, err := setDeviceActive(ctx, netboxClient, int32(deviceID64))
+		updated, err := setDeviceStatus(ctx, netboxClient, int32(deviceID64), netbox.DEVICESTATUSVALUE_ACTIVE)
 		if err != nil {
 			return fmt.Errorf("cannot transition NetBox device %d to active: %w", deviceID64, err)
 		}
