@@ -6,6 +6,7 @@ package common
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -46,6 +47,17 @@ func GetDevices(ctx *context.Context, client *netbox.APIClient, filters DeviceFi
 	}
 
 	return devices, err
+}
+
+func GetSystemDiskInventoryItems(ctx *context.Context, client *netbox.APIClient, deviceID int32) ([]netbox.InventoryItem, error) {
+	result, _, err := client.DcimAPI.DcimInventoryItemsList(*ctx).
+		DeviceId([]int32{deviceID}).
+		Role([]string{"system-disk"}).
+		Execute()
+	if err != nil {
+		return nil, fmt.Errorf("cannot list inventory items for device %d: %w", deviceID, err)
+	}
+	return result.Results, nil
 }
 
 func GetTaggedAddressesFromPrefixOfAddr(ctx *context.Context, client *netbox.APIClient, tag string, addr *netbox.IPAddress) (result []netbox.IPAddress) {

@@ -146,8 +146,18 @@ func extractHardwareData(ctx context.Context, c *netbox.APIClient, device *netbo
 
 	objectMeta := createMetaFromDevice(device)
 
-	systemDisk := tinkerbellKubeObjects.Disk{
-		Device: "/dev/sda",
+	inventoryItems, err := commonMachinecfg.GetSystemDiskInventoryItems(&ctx, c, device.Id)
+	if err != nil {
+		return nil, fmt.Errorf("cannot fetch system-disk inventory items for device %s: %w", *device.Name.Get(), err)
+	}
+	if len(inventoryItems) == 0 {
+		slog.Warn("no system-disk inventory item found", "device", *device.Name.Get(), "device_id", device.Id)
+		return nil, fmt.Errorf("device %s has no system-disk inventory item", *device.Name.Get())
+	}
+
+	var disks []tinkerbellKubeObjects.Disk
+	for _, item := range inventoryItems {
+		disks = append(disks, tinkerbellKubeObjects.Disk{Device: item.Name})
 	}
 
 	hardwareSpec := tinkerbellKubeObjects.HardwareSpec{
@@ -188,9 +198,7 @@ func extractHardwareData(ctx context.Context, c *netbox.APIClient, device *netbo
 				Slug: strings.ToLower(device.DeviceType.Manufacturer.Name),
 			},
 		},
-		Disks: []tinkerbellKubeObjects.Disk{
-			systemDisk,
-		},
+		Disks: disks,
 	}
 
 	return &tinkerbellKubeObjects.Hardware{

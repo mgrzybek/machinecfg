@@ -66,6 +66,17 @@ A custom field called `Domains` can be added to `IPAM/Prefix` in order to manage
 
 The hostname set in `/etc/hostname` of generated Ignition files is derived from the **DNS name** of the device's primary IPv4 address (or primary IP if no IPv4 is set). If no DNS name is configured, the device name is used as a fallback.
 
+#### Inventory items
+
+`Hardware.spec.disks` is populated from the device's inventory items. Each item whose **role slug** is `system-disk` is mapped to a disk entry, using the item's **name** as the device path (e.g. `/dev/nvme0n1`).
+
+If no `system-disk` inventory item is found for a device, the Hardware object is **not created** and an error is logged.
+
+| NetBox object | Field | Required value |
+|---|---|---|
+| DCIM / Inventory item | Role slug | `system-disk` |
+| DCIM / Inventory item | Name | Device path (e.g. `/dev/sda`, `/dev/nvme0n1`) |
+
 Device statuses in NetBox drive the Hardware lifecycle:
 
 | Device status   | Tinkerbell action                                                                    |
