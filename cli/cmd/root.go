@@ -109,7 +109,7 @@ func isJSONOutput(cmd *cobra.Command) bool {
 	return err == nil && output == "json"
 }
 
-func processRootArgs(cmd *cobra.Command, requireOutputDirectory bool) *ConfigurationArgs {
+func processRootArgs(cmd *cobra.Command, requireOutputDirectory bool, requireDeviceFilters ...bool) *ConfigurationArgs {
 	fatalError := false
 	endpoint, _ := cmd.Flags().GetString("netbox-endpoint")
 	token, _ := cmd.Flags().GetString("netbox-token")
@@ -148,12 +148,14 @@ func processRootArgs(cmd *cobra.Command, requireOutputDirectory bool) *Configura
 		}
 	}
 
-	if sites == "" {
+	needDeviceFilters := len(requireDeviceFilters) == 0 || requireDeviceFilters[0]
+
+	if needDeviceFilters && sites == "" {
 		slog.Error("sites option is required", "func", "processRootArgs")
 		fatalError = true
 	}
 
-	if roles == "" {
+	if needDeviceFilters && roles == "" {
 		slog.Error("roles option is required", "func", "processRootArgs")
 		fatalError = true
 	}
