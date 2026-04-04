@@ -26,7 +26,7 @@ The command stops at the first error encountered.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		configureLogger(cmd)
 
-		namespace, _ := cmd.Flags().GetString("namespace")
+		namespace := getNamespace(cmd)
 		hostname, _ := cmd.Flags().GetString("hostname")
 		kubeconfig, _ := cmd.Flags().GetString("kubeconfig")
 
@@ -70,11 +70,8 @@ The command stops at the first error encountered.`,
 
 func init() {
 	hardwareCmd.AddCommand(pxeAllowCmd)
-	pxeAllowCmd.Flags().String("namespace", "", "Kubernetes namespace containing the Hardware objects")
-	pxeAllowCmd.MarkFlagRequired("namespace")
 	pxeAllowCmd.Flags().String("hostname", "", "Name of the Hardware object to update (optional, all objects if omitted)")
 
 	hardwareCmd.AddCommand(pxeDenyCmd)
-	pxeDenyCmd.Flags().String("namespace", "", "The namespace to target")
 	pxeDenyCmd.Flags().String("hostname", "", "The hostname to target")
 }

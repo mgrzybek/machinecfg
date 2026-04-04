@@ -36,7 +36,7 @@ Existing records are left untouched (idempotent).`,
 
 		rootArguments := processRootArgs(cmd, false, false)
 
-		namespace, _ := cmd.Flags().GetString("namespace")
+		namespace := getNamespace(cmd)
 		output, _ := cmd.Flags().GetString("output")
 		kubeconfig, _ := cmd.Flags().GetString("kubeconfig")
 
@@ -70,10 +70,10 @@ Existing records are left untouched (idempotent).`,
 			fmt.Println(string(jsonData))
 		} else {
 			w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-			fmt.Fprintln(w, "CLUSTER\tFHRP-GROUP-ID\tSERVICE-ID\tUPDATED\tERROR")
+			fmt.Fprintln(w, "CLUSTER\tFHRP-GROUP-ID\tIP-ADDRESS-ID\tSERVICE-ID\tUPDATED\tERROR")
 			for _, r := range results {
-				fmt.Fprintf(w, "%s\t%d\t%d\t%t\t%s\n",
-					r.ClusterName, r.FHRPGroupID, r.ServiceID, r.Updated, r.Error)
+				fmt.Fprintf(w, "%s\t%d\t%d\t%d\t%t\t%s\n",
+					r.ClusterName, r.FHRPGroupID, r.IPAddressID, r.ServiceID, r.Updated, r.Error)
 			}
 			w.Flush()
 		}
@@ -82,7 +82,5 @@ Existing records are left untouched (idempotent).`,
 
 func init() {
 	clusterCmd.AddCommand(clusterSyncStatusCmd)
-	clusterSyncStatusCmd.Flags().String("namespace", "", "Kubernetes namespace where CAPI Cluster objects are stored")
-	clusterSyncStatusCmd.MarkFlagRequired("namespace")
 	clusterSyncStatusCmd.Flags().String("output", "table", "Output format: table or json")
 }

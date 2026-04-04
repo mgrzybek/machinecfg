@@ -117,7 +117,7 @@ func newShowServer(t *testing.T, clusterID int, clusterName, statusValue string,
 				"url":     "http://localhost/api/virtualization/clusters/",
 				"display": clusterName,
 				"name":    clusterName,
-				"type":    map[string]any{"id": 1, "url": "...", "display": "Kubernetes", "name": "Kubernetes", "slug": "kubernetes"},
+				"type":    map[string]any{"id": 1, "url": "...", "display": "Managed Kubernetes", "name": "Managed Kubernetes", "slug": "managed-kubernetes"},
 				"status":  clusterStatusJSON(statusValue),
 			},
 		}
@@ -133,6 +133,13 @@ func newShowServer(t *testing.T, clusterID int, clusterName, statusValue string,
 			devices = append(devices, deviceJSON(i+1, n))
 		}
 		b, _ := json.Marshal(map[string]any{"count": len(devices), "next": nil, "previous": nil, "results": devices})
+		_, _ = w.Write(b)
+	})
+
+	mux.HandleFunc("/api/virtualization/virtual-machines/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		b, _ := json.Marshal(map[string]any{"count": 0, "next": nil, "previous": nil, "results": []any{}})
 		_, _ = w.Write(b)
 	})
 

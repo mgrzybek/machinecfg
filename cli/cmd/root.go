@@ -51,8 +51,8 @@ func Execute() {
 func init() {
 	// Generic options
 	rootCmd.PersistentFlags().StringP("log-level", "", "", "Log level ‘production’ (default) or ‘development’")
-	rootCmd.PersistentFlags().StringP("netbox-token", "", "", "Token used to call Netbox API")
-	rootCmd.PersistentFlags().StringP("netbox-endpoint", "", "", "URL of the API")
+	rootCmd.PersistentFlags().StringP("netbox-token", "", "", "Token used to call Netbox API (overrides NETBOX_TOKEN env var)")
+	rootCmd.PersistentFlags().StringP("netbox-endpoint", "", "", "URL of the API (overrides NETBOX_ENDPOINT env var)")
 	rootCmd.PersistentFlags().StringP("output-directory", "", "", "Where to write the result")
 
 	// Location filters
@@ -63,7 +63,8 @@ func init() {
 	rootCmd.PersistentFlags().StringP("clusters", "", "", "Apply a filter on the given clusters")
 
 	// Usage filters
-	rootCmd.PersistentFlags().StringP("tenants", "", "", "Tenants to extract data from")
+	rootCmd.PersistentFlags().StringP("tenants", "", "", "Tenants / Kubernetes namespaces to extract data from")
+	rootCmd.PersistentFlags().StringP("namespaces", "", "", "Alias for --tenants")
 	rootCmd.PersistentFlags().StringP("roles", "", "", "Apply a filter on the given roles")
 
 	// Physical or virtual devices?
@@ -252,6 +253,21 @@ func getK8sClient(kubeconfigOverride string) (client.Client, error) {
 	}
 
 	return client.New(config, client.Options{Scheme: scheme})
+}
+
+// getNamespace returns the Kubernetes namespace from --tenants (primary) or --namespaces (alias).
+// Exits with an error if neither is provided.
+func getNamespace(cmd *cobra.Command) string {
+	v, _ := cmd.Flags().GetString("tenants")
+	if v == "" {
+		v, _ = cmd.Flags().GetString("namespaces")
+	}
+	parts := strings.SplitN(v, ",", 2)
+	if parts[0] == "" {
+		slog.Error("--tenants or --namespaces is required", "func", "getNamespace")
+		os.Exit(1)
+	}
+	return parts[0]
 }
 
 func getKubeconfigPath(override string) string {

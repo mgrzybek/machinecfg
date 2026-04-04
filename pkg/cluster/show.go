@@ -18,6 +18,7 @@ import (
 // ClusterRow holds the combined NetBox + Kubernetes view of a single cluster.
 type ClusterRow struct {
 	Name             string   `json:"name"`
+	Type             string   `json:"type,omitempty"`
 	NetBoxStatus     string   `json:"netbox-status,omitempty"`
 	CAPIReady        string   `json:"capi-ready,omitempty"`
 	ControlPlaneHost string   `json:"control-plane-host,omitempty"`
@@ -54,7 +55,10 @@ func Show(
 	var rows []ClusterRow
 
 	for _, nbCluster := range netboxClusters.Results {
-		row := ClusterRow{Name: nbCluster.Name}
+		row := ClusterRow{
+			Name: nbCluster.Name,
+			Type: nbCluster.Type.GetSlug(),
+		}
 
 		if nbCluster.Status != nil {
 			row.NetBoxStatus = string(nbCluster.Status.GetValue())
@@ -64,15 +68,34 @@ func Show(
 		if err != nil {
 			slog.Warn("cannot list devices for cluster", "func", "Show", "cluster", nbCluster.Name, "error", err.Error())
 		} else {
-			row.DeviceCount = len(devices)
 			for _, d := range devices {
 				row.Devices = append(row.Devices, d.GetName())
 			}
 		}
 
-		host, ready := getCAPIClusterInfo(k8sClient, ctx, namespace, nbCluster.Name)
-		row.ControlPlaneHost = host
-		row.CAPIReady = ready
+		vms, err := getClusterVMs(ctx, netboxClient, nbCluster.Id)
+		if err != nil {
+			slog.Warn("cannot list VMs for cluster", "func", "Show", "cluster", nbCluster.Name, "error", err.Error())
+		} else {
+			for _, vm := range vms {
+				row.Devices = append(row.Devices, vm.GetName())
+			}
+		}
+
+		row.DeviceCount = len(row.Devices)
+
+		switch nbCluster.Type.GetSlug() {
+		case managedKubernetesClusterTypeSlug:
+			host, ready := getCAPIClusterInfo(k8sClient, ctx, namespace, nbCluster.Name)
+			row.ControlPlaneHost = host
+			row.CAPIReady = ready
+		case standaloneKubernetesClusterTypeSlug:
+			host, _, err := getHeadnodeEndpoint(ctx, netboxClient, nbCluster.Id)
+			if err != nil {
+				slog.Warn("cannot get headnode endpoint", "func", "Show", "cluster", nbCluster.Name, "error", err.Error())
+			}
+			row.ControlPlaneHost = host
+		}
 
 		rows = append(rows, row)
 	}
@@ -88,6 +111,18 @@ func getClusterDevices(ctx context.Context, netboxClient *netbox.APIClient, clus
 		Execute()
 	if err != nil {
 		return nil, fmt.Errorf("cannot list devices for cluster %d: %w", clusterID, err)
+	}
+	return result.Results, nil
+}
+
+// getClusterVMs returns all virtual machines assigned to the given NetBox cluster ID.
+func getClusterVMs(ctx context.Context, netboxClient *netbox.APIClient, clusterID int32) ([]netbox.VirtualMachineWithConfigContext, error) {
+	clusterIDPtr := &clusterID
+	result, _, err := netboxClient.VirtualizationAPI.VirtualizationVirtualMachinesList(ctx).
+		ClusterId([]*int32{clusterIDPtr}).
+		Execute()
+	if err != nil {
+		return nil, fmt.Errorf("cannot list VMs for cluster %d: %w", clusterID, err)
 	}
 	return result.Results, nil
 }

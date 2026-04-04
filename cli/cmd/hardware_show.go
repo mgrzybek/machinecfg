@@ -28,7 +28,7 @@ If --hostname is not provided, all Hardware objects in the namespace are listed.
 	Run: func(cmd *cobra.Command, args []string) {
 		configureLogger(cmd)
 
-		namespace, _ := cmd.Flags().GetString("namespace")
+		namespace := getNamespace(cmd)
 		hostname, _ := cmd.Flags().GetString("hostname")
 		output, _ := cmd.Flags().GetString("output")
 
@@ -92,8 +92,6 @@ If --hostname is not provided, all Hardware objects in the namespace are listed.
 
 func init() {
 	hardwareCmd.AddCommand(showCmd)
-	showCmd.Flags().String("namespace", "", "Kubernetes namespace containing the Hardware objects")
-	showCmd.MarkFlagRequired("namespace")
 	showCmd.Flags().String("hostname", "", "Name of the Hardware object to show (optional, all objects if omitted)")
 	showCmd.Flags().String("output", "table", "Output format: table or json")
 }

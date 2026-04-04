@@ -4,9 +4,9 @@
 ![License](https://img.shields.io/github/license/mgrzybek/machinecfg)
 ![Go Version](https://img.shields.io/github/go-mod/go-version/mgrzybek/machinecfg)
 
-**MachineCFG** is a specialized CLI tool designed to bridge the gap between your Inventory Management System (**NetBox**) and your provisioning stack (**Tinkerbell** or **Talos Linux**).
+**MachineCFG** is a specialized CLI tool designed to bridge the gap between your Inventory Management System (**NetBox**) and your provisioning stack (**Tinkerbell**, **Talos Linux** or **Kamaji**).
 
-It automates the generation of configuration files by fetching hardware data and mapping them to **Butane/Ignition** configurations, **Tinkerbell Hardware** objects or **Talos MachineConfig patches**.
+It automates the generation of configuration files by fetching hardware data and mapping them to **Butane/Ignition** configurations, **Tinkerbell Hardware** objects or **Talos MachineConfig patches**. It also provides unified visibility over Kubernetes cluster membership by crossing NetBox virtualization records with live CAPI / Kamaji cluster state.
 
 ---
 
@@ -16,16 +16,20 @@ It automates the generation of configuration files by fetching hardware data and
 * **Butane Templating:** Converts YAML Butane configurations into JSON Ignition files on the fly.
 * **Tinkerbell Automation:** Generates and reconciles Hardware objects to deploy devices using a MaaS.
 * **Talos Linux Automation:** Generates the necessary Machine patches to manage networking.
+* **Cluster Visibility:** Cross-references NetBox virtualization clusters with live CAPI / Kamaji state — readiness, control-plane endpoint, Cilium LB-IPAM addresses and member devices in a single view.
+* **NetBox Write-back:** Reconciles FHRP groups, IP addresses (with DNS name), ServiceTemplates and Services in NetBox from observed Kubernetes cluster state.
 * **Infrastructure as Code:** Ensures your physical deployment matches your "Source of Truth".
 
 ```mermaid
 flowchart LR
-    NB[(NetBox<br>DCIM · IPAM)]
+    NB[(NetBox<br>DCIM · IPAM<br>Virtualization)]
 
     subgraph mcfg[machinecfg]
         TB[tinkerbell<br>hardware sync]
         TL[talos<br>machineconfig]
         BT[butane / ignition]
+        CS[cluster show<br>cluster ipaddr show]
+        SS[cluster<br>sync-status]
     end
 
     subgraph out[Generated objects]
@@ -38,11 +42,14 @@ flowchart LR
         TBK[Tinkerbell<br>k8s cluster]
         TALOS[Talos<br>nodes]
         LX[Flatcar · CoreOS<br>SLE Micro]
+        CAPI[CAPI / Kamaji<br>clusters]
     end
 
     NB -->|devices| TB
     NB -->|devices| TL
     NB -->|devices| BT
+    NB -->|clusters| CS
+    NB -->|clusters| SS
 
     TB --> HW
     TL --> MC
@@ -55,6 +62,9 @@ flowchart LR
 
     TBK -.->|provisioned annotation| TB
     TB -.->|device → active| NB
+    CAPI -.->|readiness · endpoint · IPs| CS
+    CAPI -.->|FHRP group · IP · service| SS
+    SS -.->|write-back| NB
 ```
 
 ## 🚀 Getting Started
@@ -151,8 +161,9 @@ stateDiagram-v2
 | `butane` / `ignition` | Manage Butane / Ignition configurations        |
 | `talos`               | Manage Talos Linux machine config patches      |
 | `tinkerbell`          | Manage Tinkerbell Hardware objects             |
+| `cluster`             | Inspect and reconcile Kubernetes cluster state |
 
-Global filter flags available on all commands:
+Global filter flags available on device commands (`tinkerbell`, `talos`, `butane`/`ignition`):
 
 | Flag             | Description                                      |
 |------------------|--------------------------------------------------|
@@ -160,7 +171,8 @@ Global filter flags available on all commands:
 | `--roles`        | Filter by NetBox device roles (required)         |
 | `--regions`      | Filter by NetBox region names                    |
 | `--locations`    | Filter by NetBox location names                  |
-| `--tenants`      | Filter by NetBox tenant names                    |
+| `--tenants`      | Tenants / Kubernetes namespaces to scope commands to |
+| `--namespaces`   | Alias for `--tenants`                            |
 | `--racks`        | Filter by rack IDs                               |
 | `--clusters`     | Filter by NetBox cluster names                   |
 | `--virtualization` | Use virtual machines instead of physical devices |
@@ -212,7 +224,7 @@ Display all Hardware objects in a namespace with their PXE, Workflow and CAPI cl
 
 ```bash
 ./machinecfg tinkerbell hardware show \
-    --namespace my-tenant
+    --tenants my-tenant
 ```
 
 Example output:
@@ -231,7 +243,7 @@ Filter to a single machine:
 
 ```bash
 ./machinecfg tinkerbell hardware show \
-    --namespace my-tenant \
+    --tenants my-tenant \
     --hostname server-paris-02
 ```
 
@@ -239,7 +251,7 @@ Output as JSON (logs are suppressed automatically):
 
 ```bash
 ./machinecfg tinkerbell hardware show \
-    --namespace my-tenant \
+    --tenants my-tenant \
     --output json | jq '.[].cluster'
 ```
 
@@ -254,14 +266,14 @@ Only devices that are currently `staged` are updated (`updated: true`).
     --netbox-endpoint $NETBOX_ENDPOINT --netbox-token $NETBOX_TOKEN \
     --sites paris-dc1 --roles cattle \
   tinkerbell hardware sync-status \
-    --namespace my-tenant
+    --tenants my-tenant
 ```
 
 Output as JSON:
 
 ```bash
 ./machinecfg ... tinkerbell hardware sync-status \
-    --namespace my-tenant \
+    --tenants my-tenant \
     --output json | jq '.[] | select(.updated)'
 ```
 
@@ -271,14 +283,14 @@ Enable PXE boot (`AllowPXE=true`) on all Hardware objects in a namespace:
 
 ```bash
 ./machinecfg tinkerbell hardware pxe-allow \
-    --namespace my-tenant
+    --tenants my-tenant
 ```
 
 Target a single machine:
 
 ```bash
 ./machinecfg tinkerbell hardware pxe-allow \
-    --namespace my-tenant \
+    --tenants my-tenant \
     --hostname my-server
 ```
 
@@ -290,10 +302,10 @@ Wipe the `userData` field (e.g. after a reprovisioning cycle):
 
 ```bash
 ./machinecfg tinkerbell hardware clean-userdata \
-    --namespace my-tenant
+    --tenants my-tenant
 
 ./machinecfg tinkerbell hardware clean-userdata \
-    --namespace my-tenant \
+    --tenants my-tenant \
     --hostname my-server
 ```
 
@@ -301,8 +313,130 @@ Wipe the `vendorData` field (forces a fresh embedded Ignition config on next pro
 
 ```bash
 ./machinecfg tinkerbell hardware clean-vendordata \
-    --namespace my-tenant
+    --tenants my-tenant
 ```
+
+---
+
+### Cluster
+
+The `cluster` commands cross-reference NetBox Virtualization clusters with live CAPI / Kamaji
+cluster state. They do **not** require `--sites` or `--roles`.
+
+#### Show clusters
+
+List all Kubernetes clusters with their NetBox status, CAPI readiness, control-plane endpoint,
+and member devices:
+
+```bash
+./machinecfg \
+    --netbox-endpoint $NETBOX_ENDPOINT --netbox-token $NETBOX_TOKEN \
+  cluster show \
+    --tenants mushroomcloud
+```
+
+Example output:
+
+```console
+NAME          TYPE                    NETBOX-STATUS   CAPI-READY   CONTROL-PLANE   DEVICE-COUNT   DEVICES
+cluster-0     managed-kubernetes      active          true         192.168.3.8     1              cn-0
+management    standalone-kubernetes   active                       10.0.0.1        1              management
+```
+
+Filter to a specific cluster:
+
+```bash
+./machinecfg ... cluster show \
+    --tenants mushroomcloud \
+    --clusters cluster-0
+```
+
+Output as JSON:
+
+```bash
+./machinecfg ... cluster show \
+    --tenants mushroomcloud \
+    --output json | jq '.[].devices'
+```
+
+#### Show cluster IP addresses
+
+List the IP addresses advertised via Cilium LB-IPAM for each cluster and cross-reference them
+with NetBox IPAM:
+
+```bash
+./machinecfg \
+    --netbox-endpoint $NETBOX_ENDPOINT --netbox-token $NETBOX_TOKEN \
+  cluster ipaddr show \
+    --tenants mushroomcloud
+```
+
+Example output:
+
+```console
+CLUSTER     IP-ADDRESS    NETBOX-ASSIGNED   NETBOX-STATUS
+cluster-0   192.168.3.8   true              active
+```
+
+The IP is read from the annotation `io.cilium/lb-ipam-ips` in
+`KamajiControlPlane.spec.network.serviceAnnotations`.
+
+#### Sync cluster status to NetBox
+
+Write back cluster state to NetBox for each Kubernetes cluster. Two NetBox cluster types are supported:
+
+| Type slug               | Control-plane source                      | Cilium IP / FHRP |
+|-------------------------|-------------------------------------------|------------------|
+| `managed-kubernetes`    | CAPI `Cluster` + `KamajiControlPlane`     | Yes              |
+| `standalone-kubernetes` | Primary IP of the headnode DCIM device or VM | No           |
+
+For each cluster the command ensures the following NetBox records exist:
+
+- an **FHRP group** named after the cluster (protocol: other)
+- for `managed-kubernetes`: the **IP address** advertised by Cilium LB-IPAM, assigned to that FHRP group
+- a **ServiceTemplate** `Kubernetes endpoint` (TCP, port from `controlPlaneEndpoint`)
+- a **Service** attached to the FHRP group
+
+Clusters of other types are silently skipped.
+
+```bash
+./machinecfg \
+    --netbox-endpoint $NETBOX_ENDPOINT --netbox-token $NETBOX_TOKEN \
+  cluster sync-status \
+    --tenants mushroomcloud
+```
+
+Example output:
+
+```console
+CLUSTER     FHRP-GROUP-ID   IP-ADDRESS-ID   SERVICE-ID   UPDATED   ERROR
+cluster-0   1               13              1            true
+```
+
+Output as JSON (filter updated entries only):
+
+```bash
+./machinecfg ... cluster sync-status \
+    --tenants mushroomcloud \
+    --output json | jq '.[] | select(.updated)'
+```
+
+The command is **idempotent**: running it a second time leaves existing objects unchanged
+(`updated: false`).
+
+After `sync-status`, running `cluster ipaddr show` will report `NETBOX-ASSIGNED=true` for
+any IP found in the `KamajiControlPlane` Cilium annotation.
+
+##### DNS name resolution
+
+The `dns_name` field of the IP address is populated using the following priority:
+
+1. `spec.controlPlaneEndpoint.host` of the CAPI Cluster, **if it is a hostname** (not a bare IP).
+2. Otherwise, the parent IPAM prefix's `Domains` custom field is read. The first entry that does
+   **not** start with `~` (systemd-networkd routing-only prefix) is used to construct
+   `<cluster-name>.<domain>`.
+
+If neither source yields a valid hostname, `dns_name` is left empty.
 
 ---
 

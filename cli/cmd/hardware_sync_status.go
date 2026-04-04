@@ -33,7 +33,7 @@ machinecfg tinkerbell hardware sync) for the transition to succeed.`,
 
 		rootArguments := processRootArgs(cmd, false)
 
-		namespace, _ := cmd.Flags().GetString("namespace")
+		namespace := getNamespace(cmd)
 		output, _ := cmd.Flags().GetString("output")
 		kubeconfig, _ := cmd.Flags().GetString("kubeconfig")
 
@@ -72,7 +72,5 @@ machinecfg tinkerbell hardware sync) for the transition to succeed.`,
 
 func init() {
 	hardwareCmd.AddCommand(syncStatusCmd)
-	syncStatusCmd.Flags().String("namespace", "", "Kubernetes namespace containing the Hardware objects")
-	syncStatusCmd.MarkFlagRequired("namespace")
 	syncStatusCmd.Flags().String("output", "table", "Output format: table or json")
 }

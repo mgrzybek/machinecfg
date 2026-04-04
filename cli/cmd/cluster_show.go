@@ -38,7 +38,7 @@ between the two systems are immediately visible.`,
 
 		rootArguments := processRootArgs(cmd, false, false)
 
-		namespace, _ := cmd.Flags().GetString("namespace")
+		namespace := getNamespace(cmd)
 		output, _ := cmd.Flags().GetString("output")
 		kubeconfig, _ := cmd.Flags().GetString("kubeconfig")
 
@@ -72,10 +72,11 @@ between the two systems are immediately visible.`,
 			fmt.Println(string(jsonData))
 		} else {
 			w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-			fmt.Fprintln(w, "NAME\tNETBOX-STATUS\tCAPI-READY\tCONTROL-PLANE\tDEVICE-COUNT\tDEVICES")
+			fmt.Fprintln(w, "NAME\tTYPE\tNETBOX-STATUS\tCAPI-READY\tCONTROL-PLANE\tDEVICE-COUNT\tDEVICES")
 			for _, r := range rows {
-				fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d\t%s\n",
+				fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%d\t%s\n",
 					r.Name,
+					r.Type,
 					r.NetBoxStatus,
 					r.CAPIReady,
 					r.ControlPlaneHost,
@@ -90,7 +91,5 @@ between the two systems are immediately visible.`,
 
 func init() {
 	clusterCmd.AddCommand(clusterShowCmd)
-	clusterShowCmd.Flags().String("namespace", "", "Kubernetes namespace where CAPI Cluster objects are stored")
-	clusterShowCmd.MarkFlagRequired("namespace")
 	clusterShowCmd.Flags().String("output", "table", "Output format: table or json")
 }

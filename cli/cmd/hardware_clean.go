@@ -26,7 +26,7 @@ If --hostname is not provided, all Hardware objects in the namespace are updated
 	Run: func(cmd *cobra.Command, args []string) {
 		configureLogger(cmd)
 
-		namespace, _ := cmd.Flags().GetString("namespace")
+		namespace := getNamespace(cmd)
 		hostname, _ := cmd.Flags().GetString("hostname")
 		kubeconfig, _ := cmd.Flags().GetString("kubeconfig")
 
@@ -57,7 +57,7 @@ If --hostname is not provided, all Hardware objects in the namespace are updated
 	Run: func(cmd *cobra.Command, args []string) {
 		configureLogger(cmd)
 
-		namespace, _ := cmd.Flags().GetString("namespace")
+		namespace := getNamespace(cmd)
 		hostname, _ := cmd.Flags().GetString("hostname")
 		kubeconfig, _ := cmd.Flags().GetString("kubeconfig")
 
@@ -78,12 +78,8 @@ If --hostname is not provided, all Hardware objects in the namespace are updated
 
 func init() {
 	hardwareCmd.AddCommand(cleanUserdataCmd)
-	cleanUserdataCmd.Flags().String("namespace", "", "Kubernetes namespace containing the Hardware objects")
-	cleanUserdataCmd.MarkFlagRequired("namespace")
 	cleanUserdataCmd.Flags().String("hostname", "", "Name of the Hardware object to clean (optional, all objects if omitted)")
 
 	hardwareCmd.AddCommand(cleanVendordataCmd)
-	cleanVendordataCmd.Flags().String("namespace", "", "Kubernetes namespace containing the Hardware objects")
-	cleanVendordataCmd.MarkFlagRequired("namespace")
 	cleanVendordataCmd.Flags().String("hostname", "", "Name of the Hardware object to clean (optional, all objects if omitted)")
 }

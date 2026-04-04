@@ -8,7 +8,7 @@ tasks:
   cli:
     desc: Build the CLI binary
     cmds:
-    - cd cli && go build -o ../machinecfg
+    - go build -o machinecfg ./cli/
 
   test:
     desc: Run unit and integration tests
