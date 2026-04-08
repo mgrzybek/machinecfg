@@ -6,8 +6,6 @@ package cmd
 
 import (
 	"context"
-	"log/slog"
-	"os"
 
 	"github.com/spf13/cobra"
 
@@ -32,15 +30,13 @@ If --hostname is not provided, all Hardware objects in the namespace are updated
 
 		k8sClient, err := getK8sClient(kubeconfig)
 		if err != nil {
-			slog.Error("no k8s configuration found", "func", "cleanUserdataCmd", "error", err.Error())
-			os.Exit(1)
+			fatalExit("no k8s configuration found", "func", "cleanUserdataCmd", "error", err.Error())
 		}
 
 		ctx := context.Background()
 
 		if err := tinkerbell.CleanUserData(k8sClient, ctx, namespace, hostname); err != nil {
-			slog.Error("failed to clean userData", "func", "cleanUserdataCmd", "error", err.Error())
-			os.Exit(1)
+			fatalExit("failed to clean userData", "func", "cleanUserdataCmd", "error", err.Error())
 		}
 	},
 }
@@ -63,15 +59,13 @@ If --hostname is not provided, all Hardware objects in the namespace are updated
 
 		k8sClient, err := getK8sClient(kubeconfig)
 		if err != nil {
-			slog.Error("no k8s configuration found", "func", "cleanVendordataCmd", "error", err.Error())
-			os.Exit(1)
+			fatalExit("no k8s configuration found", "func", "cleanVendordataCmd", "error", err.Error())
 		}
 
 		ctx := context.Background()
 
 		if err := tinkerbell.CleanVendorData(k8sClient, ctx, namespace, hostname); err != nil {
-			slog.Error("failed to clean vendorData", "func", "cleanVendordataCmd", "error", err.Error())
-			os.Exit(1)
+			fatalExit("failed to clean vendorData", "func", "cleanVendordataCmd", "error", err.Error())
 		}
 	},
 }

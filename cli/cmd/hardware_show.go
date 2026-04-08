@@ -8,8 +8,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"os"
+	"slices"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/spf13/cobra"
@@ -35,16 +36,27 @@ If --hostname is not provided, all Hardware objects in the namespace are listed.
 		kubeconfig, _ := cmd.Flags().GetString("kubeconfig")
 		k8sClient, err := getK8sClient(kubeconfig)
 		if err != nil {
-			slog.Error("no k8s configuration found", "func", "showCmd", "error", err.Error())
-			os.Exit(1)
+			fatalExit("no k8s configuration found", "func", "showCmd", "error", err.Error())
 		}
 
 		ctx := context.Background()
 
 		hardwares, err := tinkerbell.GetHardwares(k8sClient, ctx, namespace, hostname)
 		if err != nil {
-			slog.Error("failed to get Hardware objects", "func", "showCmd", "error", err.Error())
-			os.Exit(1)
+			fatalExit("failed to get Hardware objects", "func", "showCmd", "error", err.Error())
+		}
+
+		clustersFlag, _ := cmd.Flags().GetString("clusters")
+		clusterFilter := strings.Split(clustersFlag, ",")
+		if clusterFilter[0] != "" {
+			filtered := hardwares[:0]
+			for i := range hardwares {
+				clusterName := tinkerbell.GetClusterName(k8sClient, ctx, &hardwares[i])
+				if slices.Contains(clusterFilter, clusterName) {
+					filtered = append(filtered, hardwares[i])
+				}
+			}
+			hardwares = filtered
 		}
 
 		if output == "json" {
@@ -67,8 +79,7 @@ If --hostname is not provided, all Hardware objects in the namespace are listed.
 			}
 			jsonData, err := json.Marshal(rows)
 			if err != nil {
-				slog.Error("failed to marshal json", "func", "showCmd", "error", err.Error())
-				os.Exit(1)
+				fatalExit("failed to marshal json", "func", "showCmd", "error", err.Error())
 			}
 			fmt.Println(string(jsonData))
 		} else {

@@ -29,8 +29,7 @@ var fcosCmd = &cobra.Command{
 
 		fcoss, err := butane.CreateFCOSs(client, ctx, rootArguments.Filters)
 		if err != nil {
-			slog.Error("failed to create fcos configs", "func", "fcosCmd", "error", err.Error())
-			os.Exit(1)
+			fatalExit("failed to create fcos configs", "func", "fcosCmd", "error", err.Error())
 		}
 
 		for _, f := range fcoss {

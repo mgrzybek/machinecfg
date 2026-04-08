@@ -46,8 +46,7 @@ When device is in offline or planned status, it is deleted.`,
 		k8sClient, err := getK8sClient(kubeconfig)
 		if err != nil {
 			if !dirExists(rootArguments.OutputDirectory) {
-				slog.Error("no output directory and no k8s configuration found", "func", "syncCmd")
-				os.Exit(1)
+				fatalExit("no output directory and no k8s configuration found", "func", "syncCmd")
 			}
 		}
 
@@ -56,8 +55,7 @@ When device is in offline or planned status, it is deleted.`,
 
 		hardwares, err := tinkerbell.CreateHardwares(client, ctx, rootArguments.Filters, hardwareArguments.EmbeddedIgnitionVariant)
 		if err != nil {
-			slog.Error("failed to create hardwares", "func", "syncCmd", "error", err.Error())
-			os.Exit(1)
+			fatalExit("failed to create hardwares", "func", "syncCmd", "error", err.Error())
 		}
 		for _, h := range hardwares {
 			if k8sClient == nil {
@@ -89,8 +87,7 @@ When device is in offline or planned status, it is deleted.`,
 
 			hardwares, err := tinkerbell.CreateHardwaresToPrune(client, ctx, rootArguments.Filters)
 			if err != nil {
-				slog.Error("failed to list hardwares to prune", "func", "syncCmd", "error", err.Error())
-				os.Exit(1)
+				fatalExit("failed to list hardwares to prune", "func", "syncCmd", "error", err.Error())
 			}
 			for _, h := range hardwares {
 				err = k8sClient.Delete(ctx, &h)

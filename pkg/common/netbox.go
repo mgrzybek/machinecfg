@@ -35,6 +35,18 @@ func GetDevices(ctx *context.Context, client *netbox.APIClient, filters DeviceFi
 	if len(filters.Racks) > 0 && filters.Racks[0] != 0 {
 		req = req.RackId(filters.Racks)
 	}
+	if len(filters.Clusters) > 0 && filters.Clusters[0] != "" {
+		clusterIDs, clusterErr := resolveClusterIDs(ctx, client, filters.Clusters)
+		if clusterErr != nil {
+			slog.Error("failed to resolve cluster IDs", "func", "GetDevices", "error", clusterErr.Error())
+			return nil, clusterErr
+		}
+		if len(clusterIDs) == 0 {
+			slog.Warn("no clusters matched, returning empty device list", "func", "GetDevices", "clusters", filters.Clusters)
+			return &netbox.PaginatedDeviceWithConfigContextList{}, nil
+		}
+		req = req.ClusterId(clusterIDs)
+	}
 
 	devices, response, err = req.Execute()
 
@@ -47,6 +59,25 @@ func GetDevices(ctx *context.Context, client *netbox.APIClient, filters DeviceFi
 	}
 
 	return devices, err
+}
+
+// resolveClusterIDs convertit des noms de clusters NetBox en IDs.
+// L'API DCIM filtre par ClusterId (int32), pas par nom.
+func resolveClusterIDs(ctx *context.Context, client *netbox.APIClient, clusterNames []string) ([]*int32, error) {
+	result, _, err := client.VirtualizationAPI.
+		VirtualizationClustersList(*ctx).
+		Name(clusterNames).
+		Execute()
+	if err != nil {
+		return nil, fmt.Errorf("cannot resolve cluster names to IDs: %w", err)
+	}
+
+	ids := make([]*int32, 0, len(result.Results))
+	for i := range result.Results {
+		id := result.Results[i].Id
+		ids = append(ids, &id)
+	}
+	return ids, nil
 }
 
 func GetSystemDiskInventoryItems(ctx *context.Context, client *netbox.APIClient, deviceID int32) ([]netbox.InventoryItem, error) {

@@ -74,6 +74,15 @@ func init() {
 	rootCmd.PersistentFlags().StringP("kubeconfig", "", "", "Path to kubeconfig file (overrides KUBECONFIG env var)")
 }
 
+// fatalExit écrit l'erreur sur stderr (toujours visible, quel que soit le mode
+// de log) et via slog pour les pipelines de logs structurés, puis termine avec
+// le code de sortie 1.
+func fatalExit(msg string, args ...any) {
+	fmt.Fprintln(os.Stderr, "Error:", msg)
+	slog.Error(msg, args...)
+	os.Exit(1)
+}
+
 func configureLogger(cmd *cobra.Command) {
 	logLevel, _ := cmd.Flags().GetString("log-level")
 
@@ -133,17 +142,20 @@ func processRootArgs(cmd *cobra.Command, requireOutputDirectory bool, requireDev
 	clusters, _ := cmd.Flags().GetString("clusters")
 
 	if endpoint == "" {
+		fmt.Fprintln(os.Stderr, "Error: endpoint option is required")
 		slog.Error("endpoint option is required", "func", "processRootArgs")
 		fatalError = true
 	}
 
 	if len(token) != 40 {
+		fmt.Fprintln(os.Stderr, "Error: token option is invalid")
 		slog.Error("token option is invalid", "func", "processRootArgs")
 		fatalError = true
 	}
 
 	if requireOutputDirectory {
 		if len(outputDirectory) == 0 {
+			fmt.Fprintln(os.Stderr, "Error: output-directory is required")
 			slog.Error("output-directory is required", "func", "processRootArgs")
 			fatalError = true
 		}
@@ -152,11 +164,13 @@ func processRootArgs(cmd *cobra.Command, requireOutputDirectory bool, requireDev
 	needDeviceFilters := len(requireDeviceFilters) == 0 || requireDeviceFilters[0]
 
 	if needDeviceFilters && sites == "" {
+		fmt.Fprintln(os.Stderr, "Error: sites option is required")
 		slog.Error("sites option is required", "func", "processRootArgs")
 		fatalError = true
 	}
 
 	if needDeviceFilters && roles == "" {
+		fmt.Fprintln(os.Stderr, "Error: roles option is required")
 		slog.Error("roles option is required", "func", "processRootArgs")
 		fatalError = true
 	}
@@ -166,6 +180,7 @@ func processRootArgs(cmd *cobra.Command, requireOutputDirectory bool, requireDev
 		if s != "" {
 			id, parseErr := strconv.ParseInt(s, 10, 32)
 			if parseErr != nil {
+				fmt.Fprintf(os.Stderr, "Error: invalid rack id %q\n", s)
 				slog.Error("invalid rack id", "func", "processRootArgs", "value", s, "error", parseErr.Error())
 				fatalError = true
 			} else {
@@ -264,8 +279,7 @@ func getNamespace(cmd *cobra.Command) string {
 	}
 	parts := strings.SplitN(v, ",", 2)
 	if parts[0] == "" {
-		slog.Error("--tenants or --namespaces is required", "func", "getNamespace")
-		os.Exit(1)
+		fatalExit("--tenants or --namespaces is required", "func", "getNamespace")
 	}
 	return parts[0]
 }

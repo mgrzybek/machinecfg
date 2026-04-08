@@ -8,7 +8,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"os"
 	"text/tabwriter"
 
@@ -49,8 +48,7 @@ Output columns:
 
 		k8sClient, err := getK8sClient(kubeconfig)
 		if err != nil {
-			slog.Error("no k8s configuration found", "func", "ipaddrShowCmd", "error", err.Error())
-			os.Exit(1)
+			fatalExit("no k8s configuration found", "func", "ipaddrShowCmd", "error", err.Error())
 		}
 
 		ctx := context.Background()
@@ -64,15 +62,13 @@ Output columns:
 			rootArguments.Filters.Clusters,
 		)
 		if err != nil {
-			slog.Error("failed to show IP addresses", "func", "ipaddrShowCmd", "error", err.Error())
-			os.Exit(1)
+			fatalExit("failed to show IP addresses", "func", "ipaddrShowCmd", "error", err.Error())
 		}
 
 		if output == "json" {
 			jsonData, err := json.Marshal(rows)
 			if err != nil {
-				slog.Error("failed to marshal json", "func", "ipaddrShowCmd", "error", err.Error())
-				os.Exit(1)
+				fatalExit("failed to marshal json", "func", "ipaddrShowCmd", "error", err.Error())
 			}
 			fmt.Println(string(jsonData))
 		} else {

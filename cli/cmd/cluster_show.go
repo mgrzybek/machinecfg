@@ -8,7 +8,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"os"
 	"strings"
 	"text/tabwriter"
@@ -44,8 +43,7 @@ between the two systems are immediately visible.`,
 
 		k8sClient, err := getK8sClient(kubeconfig)
 		if err != nil {
-			slog.Error("no k8s configuration found", "func", "clusterShowCmd", "error", err.Error())
-			os.Exit(1)
+			fatalExit("no k8s configuration found", "func", "clusterShowCmd", "error", err.Error())
 		}
 
 		ctx := context.Background()
@@ -59,15 +57,13 @@ between the two systems are immediately visible.`,
 			rootArguments.Filters.Clusters,
 		)
 		if err != nil {
-			slog.Error("failed to show clusters", "func", "clusterShowCmd", "error", err.Error())
-			os.Exit(1)
+			fatalExit("failed to show clusters", "func", "clusterShowCmd", "error", err.Error())
 		}
 
 		if output == "json" {
 			jsonData, err := json.Marshal(rows)
 			if err != nil {
-				slog.Error("failed to marshal json", "func", "clusterShowCmd", "error", err.Error())
-				os.Exit(1)
+				fatalExit("failed to marshal json", "func", "clusterShowCmd", "error", err.Error())
 			}
 			fmt.Println(string(jsonData))
 		} else {

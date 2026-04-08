@@ -8,7 +8,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"os"
 	"text/tabwriter"
 
@@ -39,8 +38,7 @@ machinecfg tinkerbell hardware sync) for the transition to succeed.`,
 
 		k8sClient, err := getK8sClient(kubeconfig)
 		if err != nil {
-			slog.Error("no k8s configuration found", "func", "syncStatusCmd", "error", err.Error())
-			os.Exit(1)
+			fatalExit("no k8s configuration found", "func", "syncStatusCmd", "error", err.Error())
 		}
 
 		ctx := context.Background()
@@ -48,15 +46,13 @@ machinecfg tinkerbell hardware sync) for the transition to succeed.`,
 
 		results, err := tinkerbell.SyncStatus(k8sClient, ctx, namespace, netboxClient)
 		if err != nil {
-			slog.Error("failed to sync status", "func", "syncStatusCmd", "error", err.Error())
-			os.Exit(1)
+			fatalExit("failed to sync status", "func", "syncStatusCmd", "error", err.Error())
 		}
 
 		if output == "json" {
 			jsonData, err := json.Marshal(results)
 			if err != nil {
-				slog.Error("failed to marshal json", "func", "syncStatusCmd", "error", err.Error())
-				os.Exit(1)
+				fatalExit("failed to marshal json", "func", "syncStatusCmd", "error", err.Error())
 			}
 			fmt.Println(string(jsonData))
 		} else {

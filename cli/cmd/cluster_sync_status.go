@@ -8,7 +8,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"os"
 	"text/tabwriter"
 
@@ -42,8 +41,7 @@ Existing records are left untouched (idempotent).`,
 
 		k8sClient, err := getK8sClient(kubeconfig)
 		if err != nil {
-			slog.Error("no k8s configuration found", "func", "clusterSyncStatusCmd", "error", err.Error())
-			os.Exit(1)
+			fatalExit("no k8s configuration found", "func", "clusterSyncStatusCmd", "error", err.Error())
 		}
 
 		ctx := context.Background()
@@ -57,15 +55,13 @@ Existing records are left untouched (idempotent).`,
 			rootArguments.Filters.Clusters,
 		)
 		if err != nil {
-			slog.Error("failed to sync cluster status", "func", "clusterSyncStatusCmd", "error", err.Error())
-			os.Exit(1)
+			fatalExit("failed to sync cluster status", "func", "clusterSyncStatusCmd", "error", err.Error())
 		}
 
 		if output == "json" {
 			jsonData, err := json.Marshal(results)
 			if err != nil {
-				slog.Error("failed to marshal json", "func", "clusterSyncStatusCmd", "error", err.Error())
-				os.Exit(1)
+				fatalExit("failed to marshal json", "func", "clusterSyncStatusCmd", "error", err.Error())
 			}
 			fmt.Println(string(jsonData))
 		} else {

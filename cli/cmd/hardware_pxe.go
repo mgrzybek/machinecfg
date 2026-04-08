@@ -6,8 +6,6 @@ package cmd
 
 import (
 	"context"
-	"log/slog"
-	"os"
 
 	"github.com/spf13/cobra"
 
@@ -32,15 +30,13 @@ The command stops at the first error encountered.`,
 
 		k8sClient, err := getK8sClient(kubeconfig)
 		if err != nil {
-			slog.Error("no k8s configuration found", "func", "pxeAllowCmd", "error", err.Error())
-			os.Exit(1)
+			fatalExit("no k8s configuration found", "func", "pxeAllowCmd", "error", err.Error())
 		}
 
 		ctx := context.Background()
 
 		if err := tinkerbell.AllowPXE(k8sClient, ctx, namespace, hostname); err != nil {
-			slog.Error("failed to set AllowPXE", "func", "pxeAllowCmd", "error", err.Error())
-			os.Exit(1)
+			fatalExit("failed to set AllowPXE", "func", "pxeAllowCmd", "error", err.Error())
 		}
 	},
 }
@@ -60,8 +56,7 @@ The command stops at the first error encountered.`,
 		kubeconfig, _ := cmd.Flags().GetString("kubeconfig")
 		k8sClient, err := getK8sClient(kubeconfig)
 		if err != nil {
-			slog.Error("no k8s configuration found", "func", "pxeDenyCmd", "error", err.Error())
-			os.Exit(1)
+			fatalExit("no k8s configuration found", "func", "pxeDenyCmd", "error", err.Error())
 		}
 
 		_ = k8sClient

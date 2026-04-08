@@ -29,8 +29,7 @@ var flatcarCmd = &cobra.Command{
 
 		flatcars, err := butane.CreateFlatcars(client, ctx, rootArguments.Filters)
 		if err != nil {
-			slog.Error("failed to create flatcar configs", "func", "flatcarCmd", "error", err.Error())
-			os.Exit(1)
+			fatalExit("failed to create flatcar configs", "func", "flatcarCmd", "error", err.Error())
 		}
 
 		for _, f := range flatcars {

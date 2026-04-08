@@ -29,8 +29,7 @@ var machineconfigCmd = &cobra.Command{
 
 		configs, err := talos.CreateTalosConfigs(client, ctx, rootArguments.Filters)
 		if err != nil {
-			slog.Error("failed to create talos configs", "func", "machineconfigCmd", "error", err.Error())
-			os.Exit(1)
+			fatalExit("failed to create talos configs", "func", "machineconfigCmd", "error", err.Error())
 		}
 
 		for _, c := range configs {
