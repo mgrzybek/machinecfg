@@ -388,6 +388,187 @@ func TestCreateFlatcars_ExtractionError(t *testing.T) {
 	assert.Empty(t, flatcars, "no Flatcar should be returned on extraction failure")
 }
 
+// flatcarTestDeviceNoIPJSON returns a device JSON with a single interface that
+// has no IP addresses assigned, to exercise the missing-primary-IP code path.
+func flatcarTestDeviceNoIPJSON() []byte {
+	b, _ := json.Marshal(map[string]any{
+		"id":      flatcarTestDeviceID,
+		"url":     "http://localhost/api/dcim/devices/1/",
+		"display": flatcarTestHostname,
+		"name":    flatcarTestHostname,
+		"serial":  "SN001",
+		"device_type": map[string]any{
+			"id": 1, "url": "http://localhost/api/dcim/device-types/1/", "display": "test-type",
+			"manufacturer": map[string]any{
+				"id": 1, "url": "http://localhost/api/dcim/manufacturers/1/",
+				"display": "mfr", "name": "mfr", "slug": "mfr",
+			},
+			"model": "test-model", "slug": "test-model",
+			"console_port_template_count":        0,
+			"console_server_port_template_count": 0,
+			"power_port_template_count":          0,
+			"power_outlet_template_count":        0,
+			"interface_template_count":           0,
+			"front_port_template_count":          0,
+			"rear_port_template_count":           0,
+			"device_bay_template_count":          0,
+			"module_bay_template_count":          0,
+			"inventory_item_template_count":      0,
+		},
+		"role": map[string]any{
+			"id": 1, "url": "http://localhost/api/dcim/device-roles/1/",
+			"display": "worker", "name": "worker", "slug": "worker", "_depth": 0,
+		},
+		"site": map[string]any{
+			"id": 1, "url": "http://localhost/api/dcim/sites/1/",
+			"display": "test-site", "name": "test-site", "slug": "test-site",
+		},
+		// primary_ip4 intentionally absent — device has no primary IP
+		"status":                    map[string]string{"value": "staged", "label": "Staged"},
+		"console_port_count":        0,
+		"console_server_port_count": 0,
+		"power_port_count":          0,
+		"power_outlet_count":        0,
+		"front_port_count":          0,
+		"rear_port_count":           0,
+		"device_bay_count":          0,
+		"module_bay_count":          0,
+		"inventory_item_count":      0,
+	})
+	return b
+}
+
+// flatcarTestInterfaceNoMACListJSON returns a PaginatedInterfaceList containing
+// one interface without a MAC address (mac_address absent / null).
+func flatcarTestInterfaceNoMACListJSON() []byte {
+	b, _ := json.Marshal(map[string]any{
+		"count": 1, "next": nil, "previous": nil,
+		"results": []any{map[string]any{
+			"id":      flatcarTestInterfaceID,
+			"url":     "http://localhost/api/dcim/interfaces/100/",
+			"display": "eth0",
+			"device": map[string]any{
+				"id": flatcarTestDeviceID, "url": "http://localhost/api/dcim/devices/1/",
+				"display": flatcarTestHostname,
+			},
+			"name":                          "eth0",
+			"type":                          map[string]any{},
+			"tags":                          []any{},
+			"link_peers":                    []any{},
+			"tagged_vlans":                  []any{},
+			"connected_endpoints_reachable": false,
+			"count_ipaddresses":             1,
+			"count_fhrp_groups":             0,
+			"_occupied":                     false,
+			// mac_address intentionally absent (null)
+		}},
+	})
+	return b
+}
+
+// TestCreateFlatcars_MissingPrimaryIP verifies that a staged device whose
+// interface has no IP addresses assigned does not panic and produces a config
+// containing at least /etc/hostname and /etc/dcim.yaml.
+func TestCreateFlatcars_MissingPrimaryIP(t *testing.T) {
+	deviceListJSON, _ := json.Marshal(map[string]any{
+		"count": 1, "next": nil, "previous": nil,
+		"results": []json.RawMessage{flatcarTestDeviceNoIPJSON()},
+	})
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		path := r.URL.Path
+		q := r.URL.Query()
+
+		switch {
+		case strings.HasSuffix(path, "/api/dcim/devices/"):
+			_, _ = w.Write(deviceListJSON)
+		case strings.HasSuffix(path, "/api/dcim/interfaces/"):
+			_, _ = w.Write(flatcarTestInterfaceListJSON())
+		case strings.HasSuffix(path, "/api/ipam/ip-addresses/"):
+			if q.Get("interface_id") != "" {
+				// No IPs on the interface
+				_, _ = w.Write(flatcarTestEmptyIPListJSON())
+			} else {
+				_, _ = w.Write(flatcarTestEmptyIPListJSON())
+			}
+		case strings.HasSuffix(path, "/api/ipam/prefixes/"):
+			_, _ = w.Write(flatcarTestEmptyIPListJSON())
+		default:
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"detail":"not found"}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	nb := netbox.NewAPIClientFor(srv.URL, "fake-token-0000000000000000000000000000000")
+	flatcars, err := butane.CreateFlatcars(nb, context.Background(), common.DeviceFilters{})
+	require.NoError(t, err, "a device with no IPs should not produce a global error")
+	require.Len(t, flatcars, 1, "a config should still be generated even with no IP addresses")
+
+	paths := make([]string, 0, len(flatcars[0].Config.Storage.Files))
+	for _, f := range flatcars[0].Config.Storage.Files {
+		paths = append(paths, f.Path)
+	}
+	assert.Contains(t, paths, "/etc/hostname", "/etc/hostname must always be generated")
+	assert.Contains(t, paths, "/etc/dcim.yaml", "/etc/dcim.yaml must always be generated")
+}
+
+// TestCreateFlatcars_MissingMAC verifies that a staged device with an interface
+// that has no MAC address does not panic and produces a valid config.
+func TestCreateFlatcars_MissingMAC(t *testing.T) {
+	deviceListJSON, _ := json.Marshal(map[string]any{
+		"count": 1, "next": nil, "previous": nil,
+		"results": []json.RawMessage{flatcarTestDeviceJSON()},
+	})
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		path := r.URL.Path
+		q := r.URL.Query()
+
+		switch {
+		case strings.HasSuffix(path, "/api/dcim/devices/"):
+			_, _ = w.Write(deviceListJSON)
+		case strings.HasSuffix(path, "/api/dcim/interfaces/"):
+			// Interface without MAC address
+			_, _ = w.Write(flatcarTestInterfaceNoMACListJSON())
+		case strings.HasSuffix(path, "/api/ipam/ip-addresses/"):
+			if q.Get("interface_id") != "" {
+				_, _ = w.Write(flatcarTestIPListJSON())
+			} else {
+				_, _ = w.Write(flatcarTestEmptyIPListJSON())
+			}
+		case strings.Contains(path, "/api/ipam/ip-addresses/"):
+			_, _ = w.Write(flatcarTestIPRetrieveJSON())
+		case strings.HasSuffix(path, "/api/ipam/prefixes/"):
+			_, _ = w.Write(flatcarTestPrefixListJSON())
+		default:
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"detail":"not found"}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	nb := netbox.NewAPIClientFor(srv.URL, "fake-token-0000000000000000000000000000000")
+	flatcars, err := butane.CreateFlatcars(nb, context.Background(), common.DeviceFilters{})
+	require.NoError(t, err, "a missing MAC address should not produce a global error")
+	require.Len(t, flatcars, 1, "a config should be generated even without a MAC")
+
+	paths := make([]string, 0, len(flatcars[0].Config.Storage.Files))
+	for _, f := range flatcars[0].Config.Storage.Files {
+		paths = append(paths, f.Path)
+	}
+	assert.Contains(t, paths, "/etc/hostname")
+	assert.Contains(t, paths, "/etc/dcim.yaml")
+	assert.Contains(t, paths, "/etc/systemd/network/01-eth0.network",
+		"network file should be generated even when MAC is absent")
+}
+
 // TestCreateFlatcars_VLANInterface verifies that an interface with a tagged VLAN
 // produces both a .netdev file and a VLAN-specific .network file.
 func TestCreateFlatcars_VLANInterface(t *testing.T) {

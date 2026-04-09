@@ -247,6 +247,158 @@ func newHardwareTestServer(t *testing.T, systemDiskNames []string) *httptest.Ser
 	return srv
 }
 
+// hardwareTestDeviceNoIPJSON returns a device JSON payload with primary_ip4 absent
+// (null), used to verify the missing-primary-IP error path.
+func hardwareTestDeviceNoIPJSON() []byte {
+	b, _ := json.Marshal(map[string]any{
+		"id":      hwTestDeviceID,
+		"url":     "http://localhost/api/dcim/devices/1/",
+		"display": "hw-test-01",
+		"name":    "hw-test-01",
+		"serial":  "SN001",
+		"device_type": map[string]any{
+			"id": 1, "url": "http://localhost/api/dcim/device-types/1/", "display": "test-type",
+			"manufacturer": map[string]any{
+				"id": 1, "url": "http://localhost/api/dcim/manufacturers/1/",
+				"display": "test-mfr", "name": "test-mfr", "slug": "test-mfr",
+			},
+			"model": "test-model", "slug": "test-model",
+			"console_port_template_count":        0,
+			"console_server_port_template_count": 0,
+			"power_port_template_count":          0,
+			"power_outlet_template_count":        0,
+			"interface_template_count":           0,
+			"front_port_template_count":          0,
+			"rear_port_template_count":           0,
+			"device_bay_template_count":          0,
+			"module_bay_template_count":          0,
+			"inventory_item_template_count":      0,
+		},
+		"role": map[string]any{
+			"id": 1, "url": "http://localhost/api/dcim/device-roles/1/",
+			"display": "test-role", "name": "test-role", "slug": "test-role", "_depth": 0,
+		},
+		"site": map[string]any{
+			"id": 1, "url": "http://localhost/api/dcim/sites/1/",
+			"display": "test-site", "name": "test-site", "slug": "test-site",
+		},
+		"platform": map[string]any{
+			"id": 1, "url": "http://localhost/api/dcim/platforms/1/",
+			"display": "x86_64", "name": "x86_64", "slug": "x86-64",
+		},
+		"tenant": map[string]any{
+			"id": 1, "url": "http://localhost/api/tenancy/tenants/1/",
+			"display": "testing", "name": "testing", "slug": "testing",
+		},
+		// primary_ip and primary_ip4 are intentionally absent (null)
+		"status":                    map[string]string{"value": "staged", "label": "Staged"},
+		"console_port_count":        0,
+		"console_server_port_count": 0,
+		"power_port_count":          0,
+		"power_outlet_count":        0,
+		"front_port_count":          0,
+		"rear_port_count":           0,
+		"device_bay_count":          0,
+		"module_bay_count":          0,
+		"inventory_item_count":      0,
+	})
+	return b
+}
+
+// hardwareTestInterfaceNoMACJSON returns a minimal Interface without any MAC address.
+func hardwareTestInterfaceNoMACJSON() []byte {
+	b, _ := json.Marshal(map[string]any{
+		"id":      hwTestInterfaceID,
+		"url":     "http://localhost/api/dcim/interfaces/100/",
+		"display": "eth0",
+		"device": map[string]any{
+			"id": hwTestDeviceID, "url": "http://localhost/api/dcim/devices/1/",
+			"display": "hw-test-01",
+		},
+		"name":                          "eth0",
+		"type":                          map[string]any{},
+		"link_peers":                    []any{},
+		"connected_endpoints_reachable": false,
+		"count_ipaddresses":             0,
+		"count_fhrp_groups":             0,
+		"_occupied":                     false,
+		// primary_mac_address absent and mac_addresses empty → no MAC
+		"mac_addresses": []any{},
+	})
+	return b
+}
+
+// TestCreateHardwares_MissingPrimaryIP verifies that a staged device without a
+// primary IPv4 address produces no Hardware objects and no global error.
+// The per-device error is logged but not propagated by CreateHardwares.
+func TestCreateHardwares_MissingPrimaryIP(t *testing.T) {
+	deviceListJSON, _ := json.Marshal(map[string]any{
+		"count": 1, "next": nil, "previous": nil,
+		"results": []json.RawMessage{hardwareTestDeviceNoIPJSON()},
+	})
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		if strings.HasSuffix(r.URL.Path, "/api/dcim/devices/") {
+			_, _ = w.Write(deviceListJSON)
+		} else {
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"detail":"not found"}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	nb := netbox.NewAPIClientFor(srv.URL, "fake-token")
+	hardwares, err := tinkerbell.CreateHardwares(nb, context.Background(), common.DeviceFilters{}, nil)
+	require.NoError(t, err, "CreateHardwares must not return a global error for per-device failures")
+	assert.Empty(t, hardwares, "no Hardware should be produced when primary_ip4 is absent")
+}
+
+// TestCreateHardwares_MissingMAC verifies that a staged device whose primary
+// interface has no MAC address produces no Hardware objects and no global error.
+func TestCreateHardwares_MissingMAC(t *testing.T) {
+	deviceListJSON, _ := json.Marshal(map[string]any{
+		"count": 1, "next": nil, "previous": nil,
+		"results": []json.RawMessage{hardwareTestDeviceJSON()},
+	})
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		path := r.URL.Path
+		q := r.URL.Query()
+
+		switch {
+		case strings.HasSuffix(path, "/api/dcim/devices/"):
+			_, _ = w.Write(deviceListJSON)
+		case strings.HasSuffix(path, "/api/ipam/ip-addresses/"):
+			if q.Get("id") != "" {
+				_, _ = w.Write(hardwareTestIPAddressJSON())
+			} else {
+				_, _ = w.Write(hardwareTestEmptyIPListJSON())
+			}
+		case strings.Contains(path, "/api/dcim/interfaces/"):
+			// Return interface without any MAC address
+			_, _ = w.Write(hardwareTestInterfaceNoMACJSON())
+		case strings.HasSuffix(path, "/api/ipam/prefixes/"):
+			_, _ = w.Write(hardwareTestPrefixListJSON())
+		case strings.HasSuffix(path, "/api/dcim/inventory-items/"):
+			_, _ = w.Write(hardwareTestInventoryItemsJSON([]string{"/dev/sda"}))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"detail":"not found"}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	nb := netbox.NewAPIClientFor(srv.URL, "fake-token")
+	hardwares, err := tinkerbell.CreateHardwares(nb, context.Background(), common.DeviceFilters{}, nil)
+	require.NoError(t, err, "CreateHardwares must not return a global error for per-device failures")
+	assert.Empty(t, hardwares, "no Hardware should be produced when the interface has no MAC address")
+}
+
 // TestCreateHardwares_SystemDisk verifies that Hardware.spec.disks is populated
 // from NetBox inventory items with role slug "system-disk".
 func TestCreateHardwares_SystemDisk(t *testing.T) {

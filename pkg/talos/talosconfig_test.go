@@ -198,6 +198,58 @@ func newTalosTestServer(t *testing.T) *httptest.Server {
 	return srv
 }
 
+// newTalosNoIPTestServer starts an httptest.Server for the missing-IP scenario:
+// the device is active and has one interface, but the interface has no IP addresses.
+func newTalosNoIPTestServer(t *testing.T) *httptest.Server {
+	t.Helper()
+
+	deviceListJSON, _ := json.Marshal(map[string]any{
+		"count": 1, "next": nil, "previous": nil,
+		"results": []json.RawMessage{talosTestDeviceJSON()},
+	})
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		path := r.URL.Path
+
+		switch {
+		case strings.HasSuffix(path, "/api/dcim/devices/"):
+			_, _ = w.Write(deviceListJSON)
+		case strings.HasSuffix(path, "/api/dcim/interfaces/"):
+			_, _ = w.Write(talosTestInterfaceListJSON())
+		case strings.HasSuffix(path, "/api/ipam/ip-addresses/"):
+			// No IPs on any interface
+			_, _ = w.Write(talosTestEmptyIPListJSON())
+		default:
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"detail":"not found"}`))
+		}
+	}))
+
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+// TestCreateTalosConfigs_MissingPrimaryIP verifies that an active device whose
+// interface has no IP addresses does not panic and produces a config with an
+// empty DeviceCIDR for that interface.
+func TestCreateTalosConfigs_MissingPrimaryIP(t *testing.T) {
+	srv := newTalosNoIPTestServer(t)
+	nb := netbox.NewAPIClientFor(srv.URL, "fake-token-0000000000000000000000000000000")
+
+	configs, err := talos.CreateTalosConfigs(nb, context.Background(), common.DeviceFilters{})
+	require.NoError(t, err, "a device with no IPs on its interface should not produce a global error")
+	require.Len(t, configs, 1, "a config should still be generated even with no IP addresses")
+
+	v1cfg, ok := configs[0].Config[0].(*v1alpha1.Config)
+	require.True(t, ok)
+	require.Len(t, v1cfg.MachineConfig.MachineNetwork.NetworkInterfaces, 1)
+	assert.Equal(t, "", v1cfg.MachineConfig.MachineNetwork.NetworkInterfaces[0].DeviceCIDR,
+		"DeviceCIDR should be empty when no IP is assigned to the interface")
+}
+
 // TestCreateTalosConfigs_SimpleDevice verifies that an active device with a single
 // interface produces one Talos config with the expected network interface and CIDR.
 func TestCreateTalosConfigs_SimpleDevice(t *testing.T) {
