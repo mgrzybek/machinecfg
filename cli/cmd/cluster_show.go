@@ -70,7 +70,7 @@ between the two systems are immediately visible.`,
 			w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
 			_, _ = fmt.Fprintln(w, "NAME\tTYPE\tNETBOX-STATUS\tCAPI-READY\tCONTROL-PLANE\tDEVICE-COUNT\tDEVICES")
 			for _, r := range rows {
-				fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%d\t%s\n",
+				_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%d\t%s\n",
 					r.Name,
 					r.Type,
 					r.NetBoxStatus,

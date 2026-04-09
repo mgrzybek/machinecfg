@@ -57,11 +57,11 @@ machinecfg tinkerbell hardware sync) for the transition to succeed.`,
 			fmt.Println(string(jsonData))
 		} else {
 			w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-			fmt.Fprintln(w, "HOSTNAME\tDEVICE-ID\tUPDATED\tERROR")
+			_, _ = fmt.Fprintln(w, "HOSTNAME\tDEVICE-ID\tUPDATED\tERROR")
 			for _, r := range results {
-				fmt.Fprintf(w, "%s\t%d\t%t\t%s\n", r.Hostname, r.DeviceID, r.Updated, r.Error)
+				_, _ = fmt.Fprintf(w, "%s\t%d\t%t\t%s\n", r.Hostname, r.DeviceID, r.Updated, r.Error)
 			}
-			w.Flush()
+			_ = w.Flush()
 		}
 	},
 }

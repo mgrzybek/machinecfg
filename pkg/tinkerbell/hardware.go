@@ -76,7 +76,7 @@ func PrintDefaultYAML(hardware *tinkerbellKubeObjects.Hardware, destination *os.
 	if err != nil {
 		slog.Error("failed to marshal yaml", "func", "PrintDefaultYAML", "error", err.Error())
 	} else {
-		fmt.Fprintf(destination, "%s", yamlData)
+		_, _ = fmt.Fprintf(destination, "%s", yamlData)
 	}
 }
 

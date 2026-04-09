@@ -75,7 +75,7 @@ Output columns:
 			w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
 			_, _ = fmt.Fprintln(w, "CLUSTER\tIP-ADDRESS\tNETBOX-ASSIGNED\tNETBOX-STATUS")
 			for _, r := range rows {
-				fmt.Fprintf(w, "%s\t%s\t%t\t%s\n",
+				_, _ = fmt.Fprintf(w, "%s\t%s\t%t\t%s\n",
 					r.ClusterName, r.IPAddress, r.NetBoxAssigned, r.NetBoxStatus)
 			}
 			_ = w.Flush()
