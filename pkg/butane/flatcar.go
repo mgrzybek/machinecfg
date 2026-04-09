@@ -274,7 +274,7 @@ func appendSystemdNetworkFileForVlan(ctx *context.Context, client *netbox.APICli
 	}
 	if len(dnsAddresses) > 0 {
 		if prefix.CustomFields["Domains"] != nil {
-			content = fmt.Sprintf("%s\nDomains=%sDNSDefaultRoute=no\n", content, prefix.CustomFields["Domains"])
+			content = fmt.Sprintf("%s\nDomains=%s\nDNSDefaultRoute=no\n", content, prefix.CustomFields["Domains"])
 		} else {
 			content = fmt.Sprintf("%sDNSDefaultRoute=yes\n", content)
 		}

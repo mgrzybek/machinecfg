@@ -42,14 +42,21 @@ func getHostname(ctx context.Context, c *netbox.APIClient, device *netbox.Device
 }
 
 func createDCIMFile(device *netbox.DeviceWithConfigContext) string {
+	var location, rack string
+	if l := device.Location.Get(); l != nil {
+		location = l.GetName()
+	}
+	if r := device.Rack.Get(); r != nil {
+		rack = r.GetName()
+	}
 	return fmt.Sprintf(
 		"---\ngenerated-by: machinecfg\nserial: %s\nmodel: %s\nrole: %s\nsite: %s\nlocation: %s\nracks: %s\ntenant: %s\nstatus: %s",
 		*device.Serial,
 		device.DeviceType.Slug,
 		device.Role.GetName(),
 		device.Site.GetName(),
-		device.Location.Get().GetName(),
-		device.Rack.Get().GetName(),
+		location,
+		rack,
 		device.Tenant.Get().GetName(),
 		device.Status.GetLabel(),
 	)
