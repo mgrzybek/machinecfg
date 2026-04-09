@@ -48,7 +48,7 @@ func writeTalosConfig(c *talos.Talos, outputDirectory string) {
 		slog.Error("failed to create output file", "func", "writeTalosConfig", "error", err.Error())
 		return
 	}
-	defer fd.Close()
+	defer func() { _ = fd.Close() }()
 	talos.PrintYAMLFile(c.Config, fd)
 }
 

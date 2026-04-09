@@ -141,7 +141,7 @@ func printYAMLFile(h *tinkerbellKubeObjects.Hardware, rootArguments *Configurati
 	if err != nil {
 		slog.Error("failed to create output file", "func", "printYAMLFile", "error", err.Error())
 	} else {
-		defer outputFileDescriptor.Close()
+		defer func() { _ = outputFileDescriptor.Close() }()
 		if hardwareArguments.Template == nil {
 			tinkerbell.PrintDefaultYAML(h, outputFileDescriptor)
 		} else {

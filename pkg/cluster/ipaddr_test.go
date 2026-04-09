@@ -75,7 +75,7 @@ func newIPAddrNetboxServer(t *testing.T, addresses map[string]string) *httptest.
 		var results []map[string]any
 		for ip, status := range addresses {
 			if q == "" || strings.Contains(ip, q) {
-				results = append(results, ipAddressJSON(len(results)+1, ip+"/24", status, strings.Title(status)))
+				results = append(results, ipAddressJSON(len(results)+1, ip+"/24", status, strings.ToUpper(status[:1])+status[1:]))
 			}
 		}
 

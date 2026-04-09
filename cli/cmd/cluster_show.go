@@ -68,7 +68,7 @@ between the two systems are immediately visible.`,
 			fmt.Println(string(jsonData))
 		} else {
 			w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-			fmt.Fprintln(w, "NAME\tTYPE\tNETBOX-STATUS\tCAPI-READY\tCONTROL-PLANE\tDEVICE-COUNT\tDEVICES")
+			_, _ = fmt.Fprintln(w, "NAME\tTYPE\tNETBOX-STATUS\tCAPI-READY\tCONTROL-PLANE\tDEVICE-COUNT\tDEVICES")
 			for _, r := range rows {
 				fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%d\t%s\n",
 					r.Name,
@@ -80,7 +80,7 @@ between the two systems are immediately visible.`,
 					strings.Join(r.Devices, ", "),
 				)
 			}
-			w.Flush()
+			_ = w.Flush()
 		}
 	},
 }

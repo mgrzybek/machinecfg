@@ -155,7 +155,7 @@ func PrintYAMLFile(documents []config.Document, fileDescriptor *os.File) {
 		if err != nil {
 			slog.Error("failed to marshal yaml", "func", "PrintYAMLFile", "error", err.Error())
 		} else {
-			fmt.Fprintf(fileDescriptor, "%s", yamlData)
+			_, _ = fmt.Fprintf(fileDescriptor, "%s", yamlData)
 		}
 	}
 }

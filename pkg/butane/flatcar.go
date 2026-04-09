@@ -308,7 +308,7 @@ func appendSystemdNetdevConfs(files []v0_5.File, vlans []SystemdNetworkdNetdev) 
 
 func PrintFlatcarIgnitionFile(cfg *v1_1.Config, fileDescriptor *os.File) {
 	ignitionBlob := generateFlatcarIgnition(cfg)
-	fmt.Fprintf(fileDescriptor, "%s", ignitionBlob)
+	_, _ = fmt.Fprintf(fileDescriptor, "%s", ignitionBlob)
 }
 
 func generateFlatcarIgnition(cfg *v1_1.Config) (result []byte) {

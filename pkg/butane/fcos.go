@@ -175,9 +175,7 @@ func appendNetworkManagerFileForIface(ctx *context.Context, client *netbox.APICl
 }
 
 func appendNetworkManagerFileForVlan(ctx *context.Context, client *netbox.APIClient, files []v0_6.File, vlanID int32, ipAddr *netbox.IPAddress, iface *netbox.Interface) []v0_6.File {
-	var content string
-
-	content = fmt.Sprintf("[connection]\nid=%s.%v\ntype=vlan\ninterface-name=%s.%v\n[vlan]egress-priority-map=\nflags=1\nid=%v\ningress-priority-map=\nparent=%s", iface.Name, vlanID, iface.Name, vlanID, vlanID, iface.Name)
+	content := fmt.Sprintf("[connection]\nid=%s.%v\ntype=vlan\ninterface-name=%s.%v\n[vlan]egress-priority-map=\nflags=1\nid=%v\ningress-priority-map=\nparent=%s", iface.Name, vlanID, iface.Name, vlanID, vlanID, iface.Name)
 
 	files = append(files, v0_6.File{
 		Path:     fmt.Sprintf("/etc/NetworkManager/system-connections/%s.%v.nmconnection", iface.Name, vlanID),
@@ -189,7 +187,7 @@ func appendNetworkManagerFileForVlan(ctx *context.Context, client *netbox.APICli
 
 func PrintFCOSIgnitionFile(cfg *v1_6.Config, fileDescriptor *os.File) {
 	ignitionBlob := generateFCOSIgnition(cfg)
-	fmt.Fprintf(fileDescriptor, "%s", ignitionBlob)
+	_, _ = fmt.Fprintf(fileDescriptor, "%s", ignitionBlob)
 }
 
 func generateFCOSIgnition(cfg *v1_6.Config) (result []byte) {

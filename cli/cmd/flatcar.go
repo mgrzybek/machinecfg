@@ -48,7 +48,7 @@ func writeFlatcarIgnition(f *butane.Flatcar, outputDirectory string) {
 		slog.Error("failed to create output file", "func", "writeFlatcarIgnition", "error", err.Error())
 		return
 	}
-	defer fd.Close()
+	defer func() { _ = fd.Close() }()
 	butane.PrintFlatcarIgnitionFile(&f.Config, fd)
 }
 

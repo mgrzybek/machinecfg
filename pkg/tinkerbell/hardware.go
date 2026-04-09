@@ -20,14 +20,13 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"machinecfg/pkg/butane"
-	"machinecfg/pkg/common"
 
 	tinkerbellKubeObjects "github.com/tinkerbell/tink/api/v1alpha1"
 
 	commonMachinecfg "machinecfg/pkg/common"
 )
 
-func CreateHardwares(client *netbox.APIClient, ctx context.Context, filters common.DeviceFilters, userDataIgnitionVariant *string) (result []tinkerbellKubeObjects.Hardware, err error) {
+func CreateHardwares(client *netbox.APIClient, ctx context.Context, filters commonMachinecfg.DeviceFilters, userDataIgnitionVariant *string) (result []tinkerbellKubeObjects.Hardware, err error) {
 	var devices *netbox.PaginatedDeviceWithConfigContextList
 
 	filters.Status = []string{"staged"}
@@ -283,7 +282,7 @@ func cidrToNetmask(cidr string) (string, error) {
 	return net.IP(ipNet.Mask).String(), nil
 }
 
-func CreateHardwaresToPrune(client *netbox.APIClient, ctx context.Context, filters common.DeviceFilters) (result []tinkerbellKubeObjects.Hardware, err error) {
+func CreateHardwaresToPrune(client *netbox.APIClient, ctx context.Context, filters commonMachinecfg.DeviceFilters) (result []tinkerbellKubeObjects.Hardware, err error) {
 	var devices *netbox.PaginatedDeviceWithConfigContextList
 
 	filters.Status = []string{"offline", "planned"}

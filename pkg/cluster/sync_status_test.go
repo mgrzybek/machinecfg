@@ -109,7 +109,7 @@ func paginatedResponse(count int, results any) []byte {
 
 // clusterEntry builds a NetBox cluster map with the given name and type slug.
 func clusterEntry(id int, name, typeSlug string) map[string]any {
-	typeName := strings.Title(typeSlug)
+	typeName := strings.ToUpper(typeSlug[:1]) + typeSlug[1:]
 	return map[string]any{
 		"id":      id,
 		"url":     "http://localhost/api/virtualization/clusters/" + name + "/",

@@ -48,7 +48,7 @@ func writeFCOSIgnition(f *butane.FCOS, outputDirectory string) {
 		slog.Error("failed to create output file", "func", "writeFCOSIgnition", "error", err.Error())
 		return
 	}
-	defer fd.Close()
+	defer func() { _ = fd.Close() }()
 	butane.PrintFCOSIgnitionFile(&f.Config, fd)
 }
 

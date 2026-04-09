@@ -114,9 +114,7 @@ func GetTaggedAddressesFromPrefixOfAddr(ctx *context.Context, client *netbox.API
 				slog.Warn("no address found with tag", "func", "GetTaggedAddressesFromPrefixOfAddr", "prefix_id", prefix.Id, "prefix", prefix.Display, "tag", tag)
 			}
 
-			for _, address := range addresses.Results {
-				result = append(result, address)
-			}
+			result = append(result, addresses.Results...)
 		}
 	}
 
@@ -134,9 +132,7 @@ func GetTaggedAddressesFromPrefix(ctx *context.Context, client *netbox.APIClient
 	if addresses.Count == 0 {
 		slog.Warn("no address found with tag", "func", "GetTaggedAddressesFromPrefix", "prefix", prefix.Display, "tag", tag)
 	}
-	for _, address := range addresses.Results {
-		result = append(result, address)
-	}
+	result = append(result, addresses.Results...)
 	return result
 }
 
