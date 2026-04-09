@@ -21,6 +21,14 @@ tasks:
     - go test ./...
     - go test -tags integration ./...
 
+  seed-netbox:
+    desc: Seed NetBox with the testing tenant and devices for integration tests
+    preconditions:
+    - test -n "$NETBOX_TOKEN"
+    - test -n "$NETBOX_ENDPOINT"
+    cmds:
+    - go run ./tooling/seed-netbox/
+
   clean-tmp:
     desc: Remove temporary files
     cmd: rm -rf tmp/*
