@@ -123,6 +123,23 @@ func GetTaggedAddressesFromPrefixOfAddr(ctx *context.Context, client *netbox.API
 	return result
 }
 
+// GetTaggedAddressesFromPrefix returns IP addresses tagged with tag in the
+// given prefix. It reuses an already-fetched prefix instead of re-querying it.
+func GetTaggedAddressesFromPrefix(ctx *context.Context, client *netbox.APIClient, tag string, prefix *netbox.Prefix) (result []netbox.IPAddress) {
+	addresses, _, err := client.IpamAPI.IpamIpAddressesList(*ctx).Parent([]string{prefix.Display}).Tag([]string{tag}).Execute()
+	if err != nil {
+		slog.Warn("failed to list addresses by tag", "func", "GetTaggedAddressesFromPrefix", "prefix", prefix.Display, "tag", tag, "error", err.Error())
+		return
+	}
+	if addresses.Count == 0 {
+		slog.Warn("no address found with tag", "func", "GetTaggedAddressesFromPrefix", "prefix", prefix.Display, "tag", tag)
+	}
+	for _, address := range addresses.Results {
+		result = append(result, address)
+	}
+	return result
+}
+
 func HasDHCPTag(tags []netbox.NestedTag) (answer bool) {
 	for _, tag := range tags {
 		if strings.ToLower(tag.GetName()) == "dhcp" {

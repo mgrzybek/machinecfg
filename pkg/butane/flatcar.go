@@ -7,6 +7,7 @@ package butane
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -98,10 +99,13 @@ func CreateFlatcars(client *netbox.APIClient, ctx context.Context, filters commo
 		slog.Warn("no device found", "func", "CreateFlatcars")
 	}
 
+	var extractErrs []error
 	for _, device := range devices.Results {
-		butane, err := extractFlatcarData(ctx, client, &device)
-		if err != nil {
-			slog.Error("failed to extract flatcar data", "func", "CreateFlatcars", "error", err.Error())
+		butane, extractErr := extractFlatcarData(ctx, client, &device)
+		if extractErr != nil {
+			slog.Error("failed to extract flatcar data", "func", "CreateFlatcars", "error", extractErr.Error())
+			extractErrs = append(extractErrs, extractErr)
+			continue
 		}
 		if butane != nil {
 			slog.Debug("flatcar config extracted", "func", "CreateFlatcars")
@@ -112,7 +116,7 @@ func CreateFlatcars(client *netbox.APIClient, ctx context.Context, filters commo
 		}
 	}
 
-	return result, err
+	return result, errors.Join(extractErrs...)
 }
 
 func extractFlatcarData(ctx context.Context, c *netbox.APIClient, device *netbox.DeviceWithConfigContext) (*v1_1.Config, error) {
@@ -149,7 +153,7 @@ func extractFlatcarData(ctx context.Context, c *netbox.APIClient, device *netbox
 						netDevConfs = append(netDevConfs, netDevConf)
 						files = appendSystemdNetworkFileForVlan(&ctx, c, files, &netDevConf, &ipAddr, &prefix)
 					} else {
-						physicalNetworkDevice = setValuesToNetworkDevice(&ctx, c, files, &iface, &ipAddr, &prefix)
+						physicalNetworkDevice = setValuesToNetworkDevice(&ctx, c, &iface, &ipAddr, &prefix)
 					}
 				}
 			}
@@ -175,7 +179,7 @@ func extractFlatcarData(ctx context.Context, c *netbox.APIClient, device *netbox
 	}, nil
 }
 
-func setValuesToNetworkDevice(ctx *context.Context, client *netbox.APIClient, files []v0_5.File, iface *netbox.Interface, ipAddr *netbox.IPAddress, prefix *netbox.Prefix) (result SystemdNetworkdDevice) {
+func setValuesToNetworkDevice(ctx *context.Context, client *netbox.APIClient, iface *netbox.Interface, ipAddr *netbox.IPAddress, prefix *netbox.Prefix) (result SystemdNetworkdDevice) {
 	result.Name = iface.Name
 
 	if iface.MacAddress.Get() != nil {
@@ -188,12 +192,12 @@ func setValuesToNetworkDevice(ctx *context.Context, client *netbox.APIClient, fi
 		result.Network.DHCP = "no"
 		result.Network.Addresses = append(result.Network.Addresses, ipAddr.Address)
 
-		gatewayAddresses := commonMachinecfg.GetTaggedAddressesFromPrefixOfAddr(ctx, client, "gateway", ipAddr)
+		gatewayAddresses := commonMachinecfg.GetTaggedAddressesFromPrefix(ctx, client, "gateway", prefix)
 		for _, addr := range gatewayAddresses {
 			result.Network.Gateway = addr.Address
 		}
 
-		dnsAddresses := commonMachinecfg.GetTaggedAddressesFromPrefixOfAddr(ctx, client, "dns", ipAddr)
+		dnsAddresses := commonMachinecfg.GetTaggedAddressesFromPrefix(ctx, client, "dns", prefix)
 		for _, addr := range dnsAddresses {
 			result.Network.DNS = append(result.Network.DNS, strings.Split(addr.Address, "/")[0])
 			result.Network.DNSDefaultRoute = "no"
@@ -263,12 +267,12 @@ func appendSystemdNetworkFileForVlan(ctx *context.Context, client *netbox.APICli
 
 	content = fmt.Sprintf("[Match]\nName=%v\n[Network]\nDHCP=no\nAddress=%s\n", netDev.Name, ipAddr.Address)
 
-	gatewayAddresses := commonMachinecfg.GetTaggedAddressesFromPrefixOfAddr(ctx, client, "gateway", ipAddr)
+	gatewayAddresses := commonMachinecfg.GetTaggedAddressesFromPrefix(ctx, client, "gateway", prefix)
 	for _, addr := range gatewayAddresses {
 		content = fmt.Sprintf("%s\nGateway=%s\n", content, strings.Split(addr.Address, "/")[0])
 	}
 
-	dnsAddresses := commonMachinecfg.GetTaggedAddressesFromPrefixOfAddr(ctx, client, "dns", ipAddr)
+	dnsAddresses := commonMachinecfg.GetTaggedAddressesFromPrefix(ctx, client, "dns", prefix)
 	for _, addr := range dnsAddresses {
 		content = fmt.Sprintf("%s\nDNS=%s\n", content, strings.Split(addr.Address, "/")[0])
 	}

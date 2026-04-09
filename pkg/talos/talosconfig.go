@@ -6,6 +6,7 @@ package talos
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -37,21 +38,23 @@ func CreateTalosConfigs(client *netbox.APIClient, ctx context.Context, filters c
 	if devices.Count == 0 {
 		slog.Warn("no device found", "func", "CreateTalosConfigs")
 	} else {
+		var extractErrs []error
 		for _, device := range devices.Results {
-			talos, err := extractTalosData(ctx, client, &device)
-			if err != nil {
-				slog.Error("failed to extract talos data", "func", "CreateTalosConfigs", "error", err.Error())
+			talos, extractErr := extractTalosData(ctx, client, &device)
+			if extractErr != nil {
+				slog.Error("failed to extract talos data", "func", "CreateTalosConfigs", "error", extractErr.Error())
+				extractErrs = append(extractErrs, extractErr)
+				continue
 			}
 			if talos != nil {
 				slog.Debug("talos config extracted", "func", "CreateTalosConfigs")
-				item := Talos{
+				result = append(result, Talos{
 					Config:   talos,
 					Hostname: device.GetName(),
-				}
-				result = append(result, item)
-
+				})
 			}
 		}
+		err = errors.Join(extractErrs...)
 	}
 
 	return result, err
