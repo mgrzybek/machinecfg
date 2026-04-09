@@ -84,7 +84,9 @@ func extractTalosData(ctx context.Context, c *netbox.APIClient, device *netbox.D
 					slog.Error("failed to list prefixes", "func", "extractTalosData", "error", err.Error())
 				} else {
 					if prefix.Count > 0 {
-						vlanID = prefix.Results[0].Vlan.Get().Vid
+						if v := prefix.Results[0].Vlan.Get(); v != nil {
+							vlanID = v.Vid
+						}
 						if commonMachinecfg.IsVlanIDInVlanList(vlanID, netboxInterface.TaggedVlans) {
 
 							talosVlans = append(talosVlans, &v1alpha1.Vlan{

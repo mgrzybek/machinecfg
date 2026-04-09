@@ -144,7 +144,7 @@ func extractFlatcarData(ctx context.Context, c *netbox.APIClient, device *netbox
 				if prefixes.Count > 0 {
 					prefix := prefixes.Results[0]
 					vlan := prefix.Vlan.Get()
-					if commonMachinecfg.IsVlanIDInVlanList(vlan.Vid, iface.TaggedVlans) {
+					if vlan != nil && commonMachinecfg.IsVlanIDInVlanList(vlan.Vid, iface.TaggedVlans) {
 						netDevConf := SystemdNetworkdNetdev{Name: vlan.Name, Kind: "vlan", ID: vlan.Vid}
 						netDevConfs = append(netDevConfs, netDevConf)
 						files = appendSystemdNetworkFileForVlan(&ctx, c, files, &netDevConf, &ipAddr, &prefix)

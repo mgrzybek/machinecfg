@@ -74,7 +74,7 @@ func TestCreateHardwares_SystemDiskIntegration(t *testing.T) {
 		deviceID := int32(deviceID64)
 
 		// Fetch the expected system-disk inventory items for this device.
-		items, itemErr := nb.DcimAPI.DcimInventoryItemsList(ctx).
+		items, _, itemErr := nb.DcimAPI.DcimInventoryItemsList(ctx).
 			DeviceId([]int32{deviceID}).
 			Role([]string{"system-disk"}).
 			Execute()
