@@ -353,6 +353,41 @@ func TestCreateFlatcars_SimpleDevice(t *testing.T) {
 		"/etc/dcim.yaml file should be generated")
 }
 
+// TestCreateFlatcars_ExtractionError verifies that an API error during interface
+// listing is propagated via errors.Join and does not silently return an empty slice.
+func TestCreateFlatcars_ExtractionError(t *testing.T) {
+	deviceListJSON, _ := json.Marshal(map[string]any{
+		"count": 1, "next": nil, "previous": nil,
+		"results": []json.RawMessage{flatcarTestDeviceJSON()},
+	})
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		path := r.URL.Path
+		switch {
+		case strings.HasSuffix(path, "/api/dcim/devices/"):
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(deviceListJSON)
+		case strings.HasSuffix(path, "/api/dcim/interfaces/"):
+			// Simulate a NetBox error during interface listing
+			w.WriteHeader(http.StatusInternalServerError)
+			_, _ = w.Write([]byte(`{"detail":"server error"}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"detail":"not found"}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	nb := netbox.NewAPIClientFor(srv.URL, "fake-token-0000000000000000000000000000000")
+	filters := common.DeviceFilters{}
+
+	flatcars, err := butane.CreateFlatcars(nb, context.Background(), filters)
+	assert.Error(t, err, "extraction failure should be propagated")
+	assert.Empty(t, flatcars, "no Flatcar should be returned on extraction failure")
+}
+
 // TestCreateFlatcars_VLANInterface verifies that an interface with a tagged VLAN
 // produces both a .netdev file and a VLAN-specific .network file.
 func TestCreateFlatcars_VLANInterface(t *testing.T) {

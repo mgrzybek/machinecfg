@@ -211,49 +211,44 @@ func setValuesToNetworkDevice(ctx *context.Context, client *netbox.APIClient, if
 }
 
 func appendSystemdNetworkFileForIface(files []v0_5.File, networkDevice *SystemdNetworkdDevice, netDevs []SystemdNetworkdNetdev) []v0_5.File {
-	var content string
+	var b strings.Builder
 
-	content = fmt.Sprintf("[Match]\nName=%s\n", networkDevice.Name)
-
+	fmt.Fprintf(&b, "[Match]\nName=%s\n", networkDevice.Name)
 	if networkDevice.MACAddress != "" {
-		content = fmt.Sprintf("%sMACAddress=%s\n", content, networkDevice.MACAddress)
+		fmt.Fprintf(&b, "MACAddress=%s\n", networkDevice.MACAddress)
 	}
-
-	content = fmt.Sprintf("%s\n[Network]\nLLDP=yes\nEmitLLDP=yes\n", content)
+	fmt.Fprintf(&b, "\n[Network]\nLLDP=yes\nEmitLLDP=yes\n")
 
 	if networkDevice.Network.DHCP == "yes" {
-		content = fmt.Sprintf("%sDHCP=yes\n", content)
+		fmt.Fprintf(&b, "DHCP=yes\n")
 	} else {
-		content = fmt.Sprintf("%s\nDHCP=no\n", content)
-
+		fmt.Fprintf(&b, "\nDHCP=no\n")
 		for _, addr := range networkDevice.Network.Addresses {
-			content = fmt.Sprintf("%s\nAddress=%s\n", content, addr)
+			fmt.Fprintf(&b, "\nAddress=%s\n", addr)
 		}
-
 		if networkDevice.Network.Gateway != "" {
-			content = fmt.Sprintf("%sGateway=%s\n", content, networkDevice.Network.Gateway)
+			fmt.Fprintf(&b, "Gateway=%s\n", networkDevice.Network.Gateway)
 		}
-
 		for _, addr := range networkDevice.Network.DNS {
-			content = fmt.Sprintf("%sDNS=%s\n", content, addr)
+			fmt.Fprintf(&b, "DNS=%s\n", addr)
 		}
-
 		if len(networkDevice.Network.Domains) == 0 {
-			content = fmt.Sprintf("%s\nDNSDefaultRoute=yes\n", content)
+			fmt.Fprintf(&b, "\nDNSDefaultRoute=yes\n")
 		} else {
-			content = fmt.Sprintf("%s\nDomains=%s\nDNSDefaultRoute=no\n", content, strings.Join(networkDevice.Network.Domains, " "))
+			fmt.Fprintf(&b, "\nDomains=%s\nDNSDefaultRoute=no\n", strings.Join(networkDevice.Network.Domains, " "))
 		}
 	}
 
 	for _, netDev := range netDevs {
 		if netDev.Kind == "vlan" {
-			content = fmt.Sprintf("%sVLAN=%v\n", content, netDev.Name)
+			fmt.Fprintf(&b, "VLAN=%v\n", netDev.Name)
 		}
 	}
 
 	path := fmt.Sprintf("/etc/systemd/network/01-%s.network", networkDevice.Name)
 	slog.Debug("writing network file", "func", "appendSystemdNetworkFileForIface", "path", path)
 
+	content := b.String()
 	files = append(files, v0_5.File{
 		Path:     path,
 		Contents: v0_5.Resource{Inline: &content},
@@ -263,30 +258,31 @@ func appendSystemdNetworkFileForIface(files []v0_5.File, networkDevice *SystemdN
 }
 
 func appendSystemdNetworkFileForVlan(ctx *context.Context, client *netbox.APIClient, files []v0_5.File, netDev *SystemdNetworkdNetdev, ipAddr *netbox.IPAddress, prefix *netbox.Prefix) []v0_5.File {
-	var content string
+	var b strings.Builder
 
-	content = fmt.Sprintf("[Match]\nName=%v\n[Network]\nDHCP=no\nAddress=%s\n", netDev.Name, ipAddr.Address)
+	fmt.Fprintf(&b, "[Match]\nName=%v\n[Network]\nDHCP=no\nAddress=%s\n", netDev.Name, ipAddr.Address)
 
 	gatewayAddresses := commonMachinecfg.GetTaggedAddressesFromPrefix(ctx, client, "gateway", prefix)
 	for _, addr := range gatewayAddresses {
-		content = fmt.Sprintf("%s\nGateway=%s\n", content, strings.Split(addr.Address, "/")[0])
+		fmt.Fprintf(&b, "\nGateway=%s\n", strings.Split(addr.Address, "/")[0])
 	}
 
 	dnsAddresses := commonMachinecfg.GetTaggedAddressesFromPrefix(ctx, client, "dns", prefix)
 	for _, addr := range dnsAddresses {
-		content = fmt.Sprintf("%s\nDNS=%s\n", content, strings.Split(addr.Address, "/")[0])
+		fmt.Fprintf(&b, "\nDNS=%s\n", strings.Split(addr.Address, "/")[0])
 	}
 	if len(dnsAddresses) > 0 {
 		if prefix.CustomFields["Domains"] != nil {
-			content = fmt.Sprintf("%s\nDomains=%s\nDNSDefaultRoute=no\n", content, prefix.CustomFields["Domains"])
+			fmt.Fprintf(&b, "\nDomains=%s\nDNSDefaultRoute=no\n", prefix.CustomFields["Domains"])
 		} else {
-			content = fmt.Sprintf("%sDNSDefaultRoute=yes\n", content)
+			fmt.Fprintf(&b, "DNSDefaultRoute=yes\n")
 		}
 	}
 
 	path := fmt.Sprintf("/etc/systemd/network/01-%v.network", netDev.Name)
 	slog.Debug("writing vlan network file", "func", "appendSystemdNetworkFileForVlan", "path", path)
 
+	content := b.String()
 	files = append(files, v0_5.File{
 		Path:     path,
 		Contents: v0_5.Resource{Inline: &content},

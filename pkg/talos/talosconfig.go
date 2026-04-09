@@ -80,6 +80,9 @@ func extractTalosData(ctx context.Context, c *netbox.APIClient, device *netbox.D
 
 		if !commonMachinecfg.HasDHCPTag(netboxInterface.Tags) {
 			for _, ipAddr := range ipAddresses.Results {
+				// vlanID stays 0 when no VLAN is associated with the prefix.
+				// VLAN ID 0 is reserved (IEEE 802.1Q) and never assigned in NetBox,
+				// so 0 safely acts as a "no VLAN" sentinel here.
 				var vlanID int32
 
 				prefix, _, err := c.IpamAPI.IpamPrefixesList(ctx).Contains(ipAddr.Address).Execute()
