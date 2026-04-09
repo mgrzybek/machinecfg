@@ -3,6 +3,7 @@
 #
 # Binaries for programs and plugins
 machinecfg
+seed-netbox
 *.exe
 *.exe~
 *.dll
