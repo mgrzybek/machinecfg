@@ -73,10 +73,10 @@ Output columns:
 			fmt.Println(string(jsonData))
 		} else {
 			w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-			_, _ = fmt.Fprintln(w, "CLUSTER\tIP-ADDRESS\tNETBOX-ASSIGNED\tNETBOX-STATUS")
+			_, _ = fmt.Fprintln(w, "CLUSTER\tIP-ADDRESS\tSOURCE\tNETBOX-ASSIGNED\tNETBOX-STATUS")
 			for _, r := range rows {
-				_, _ = fmt.Fprintf(w, "%s\t%s\t%t\t%s\n",
-					r.ClusterName, r.IPAddress, r.NetBoxAssigned, r.NetBoxStatus)
+				_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%t\t%s\n",
+					r.ClusterName, r.IPAddress, r.Source, r.NetBoxAssigned, r.NetBoxStatus)
 			}
 			_ = w.Flush()
 		}

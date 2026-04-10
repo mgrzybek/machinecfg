@@ -15,6 +15,7 @@ import (
 	"github.com/spf13/cobra"
 
 	tinkerbellKubeObjects "github.com/tinkerbell/tink/api/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -264,6 +265,12 @@ func getK8sClient(kubeconfigOverride string) (client.Client, error) {
 	err = tinkerbellKubeObjects.AddToScheme(scheme)
 	if err != nil {
 		slog.Error("failed to add tinkerbell scheme", "func", "getK8sClient", "error", err.Error())
+		return nil, err
+	}
+
+	err = corev1.AddToScheme(scheme)
+	if err != nil {
+		slog.Error("failed to add corev1 scheme", "func", "getK8sClient", "error", err.Error())
 		return nil, err
 	}
 

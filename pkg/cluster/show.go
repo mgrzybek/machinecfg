@@ -22,6 +22,7 @@ type ClusterRow struct {
 	NetBoxStatus     string   `json:"netbox-status,omitempty"`
 	CAPIReady        string   `json:"capi-ready,omitempty"`
 	ControlPlaneHost string   `json:"control-plane-host,omitempty"`
+	TailscaleAddress string   `json:"tailscale-address,omitempty"`
 	DeviceCount      int      `json:"device-count"`
 	Devices          []string `json:"devices,omitempty"`
 }
@@ -89,6 +90,12 @@ func Show(
 			host, ready := getCAPIClusterInfo(k8sClient, ctx, namespace, nbCluster.Name)
 			row.ControlPlaneHost = host
 			row.CAPIReady = ready
+			dev, err := getKamajiTailscaleDevice(k8sClient, ctx, namespace, nbCluster.Name)
+			if err != nil {
+				slog.Warn("cannot get Tailscale address", "func", "Show", "cluster", nbCluster.Name, "error", err.Error())
+			} else if dev.Address() != "" {
+				row.TailscaleAddress = dev.Address()
+			}
 		case standaloneKubernetesClusterTypeSlug:
 			host, _, err := getHeadnodeEndpoint(ctx, netboxClient, nbCluster.Id)
 			if err != nil {

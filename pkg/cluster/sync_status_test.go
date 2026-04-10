@@ -239,11 +239,26 @@ func newNetboxClusterServer(t *testing.T, state *netboxState) *httptest.Server {
 		_, _ = w.Write(paginatedResponse(len(filtered), filtered))
 	})
 
-	// IPAM prefixes — filters by ?contains= (returns all prefixes, mock ignores the actual CIDR check)
+	// IPAM prefixes — GET returns all (mock ignores ?contains=), POST creates a new one.
 	mux.HandleFunc("/api/ipam/prefixes/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write(paginatedResponse(len(state.prefixes), state.prefixes))
+		switch r.Method {
+		case http.MethodGet:
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(paginatedResponse(len(state.prefixes), state.prefixes))
+		case http.MethodPost:
+			var body map[string]any
+			_ = json.NewDecoder(r.Body).Decode(&body)
+			newID := len(state.prefixes) + 1
+			prefix, _ := body["prefix"].(string)
+			p := prefixJSON(newID, prefix, "")
+			state.prefixes = append(state.prefixes, p)
+			w.WriteHeader(http.StatusCreated)
+			b, _ := json.Marshal(p)
+			_, _ = w.Write(b)
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
+		}
 	})
 
 	// FHRP groups
@@ -817,6 +832,67 @@ func TestSyncStatus_StandaloneKubernetes_NoHeadnode(t *testing.T) {
 
 // TestSyncStatus_StandaloneKubernetes_NoHeadnodeIP verifies that a headnode device
 // with no primary IP records an error and creates no NetBox objects.
+// TestSyncStatus_TailscaleSync verifies that when a KamajiControlPlane is
+// Tailscale-exposed, the Tailscale IP is written to NetBox IPAM and the result
+// carries the TailscaleAddress field.
+func TestSyncStatus_TailscaleSync(t *testing.T) {
+	state := &netboxState{}
+	addClusters(state, struct{ name, typeSlug string }{testClusterName, "managed-kubernetes"})
+
+	capiCluster := makeCAPICluster(testClusterName, testNamespace, 6443)
+	kcp := makeKamajiControlPlaneWithTailscale(testClusterName, testNamespace, "my-cluster")
+	ss := makeTailscaleStatefulSet("ts-my-cluster", testClusterName, testNamespace)
+	secret := makeTailscaleSecret("ts-my-cluster", "my-cluster.tailnet.ts.net", []string{"100.64.0.1"})
+	k8sClient := fake.NewClientBuilder().WithObjects(capiCluster, kcp, ss, secret).Build()
+
+	srv := newNetboxClusterServer(t, state)
+	netboxClient := netbox.NewAPIClientFor(srv.URL, "fake-token")
+
+	results, err := cluster.SyncStatus(k8sClient, context.Background(), testNamespace, netboxClient, []string{testClusterName})
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+
+	r := results[0]
+	assert.Empty(t, r.Error)
+	assert.True(t, r.Updated)
+	assert.Equal(t, "my-cluster.tailnet.ts.net", r.TailscaleAddress)
+
+	// The Tailscale IP must have been added to IPAM
+	tsIPFound := false
+	for _, ip := range state.ipAddresses {
+		if addr, _ := ip["address"].(string); strings.Contains(addr, "100.64.0.1") {
+			tsIPFound = true
+			break
+		}
+	}
+	assert.True(t, tsIPFound, "Tailscale IP 100.64.0.1 must be present in IPAM")
+	// A /32 prefix must have been created for the Tailscale IP
+	assert.NotEmpty(t, state.prefixes, "a prefix must be created for the Tailscale IP")
+}
+
+// TestSyncStatus_TailscaleSync_NoStatefulSet verifies that a missing Tailscale StatefulSet
+// is handled gracefully (logged as warning) without failing the whole sync.
+func TestSyncStatus_TailscaleSync_NoStatefulSet(t *testing.T) {
+	state := &netboxState{}
+	addClusters(state, struct{ name, typeSlug string }{testClusterName, "managed-kubernetes"})
+
+	capiCluster := makeCAPICluster(testClusterName, testNamespace, 6443)
+	kcp := makeKamajiControlPlaneWithTailscale(testClusterName, testNamespace, "my-cluster")
+	// No StatefulSet or Secret
+	k8sClient := fake.NewClientBuilder().WithObjects(capiCluster, kcp).Build()
+
+	srv := newNetboxClusterServer(t, state)
+	netboxClient := netbox.NewAPIClientFor(srv.URL, "fake-token")
+
+	results, err := cluster.SyncStatus(k8sClient, context.Background(), testNamespace, netboxClient, []string{testClusterName})
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+
+	r := results[0]
+	assert.Empty(t, r.Error)
+	assert.Empty(t, r.TailscaleAddress, "TailscaleAddress must be empty when StatefulSet is missing")
+}
+
 func TestSyncStatus_StandaloneKubernetes_NoHeadnodeIP(t *testing.T) {
 	state := &netboxState{}
 	addClusters(state, struct{ name, typeSlug string }{testClusterName, "standalone-kubernetes"})

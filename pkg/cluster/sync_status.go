@@ -25,12 +25,13 @@ const headnodeRoleSlug = "headnode"
 
 // SyncStatusResult holds the outcome of a single cluster sync operation.
 type SyncStatusResult struct {
-	ClusterName string `json:"cluster-name"`
-	FHRPGroupID int32  `json:"fhrp-group-id,omitempty"`
-	ServiceID   int32  `json:"service-id,omitempty"`
-	IPAddressID int32  `json:"ip-address-id,omitempty"`
-	Updated     bool   `json:"updated"`
-	Error       string `json:"error,omitempty"`
+	ClusterName      string `json:"cluster-name"`
+	FHRPGroupID      int32  `json:"fhrp-group-id,omitempty"`
+	ServiceID        int32  `json:"service-id,omitempty"`
+	IPAddressID      int32  `json:"ip-address-id,omitempty"`
+	TailscaleAddress string `json:"tailscale-address,omitempty"`
+	Updated          bool   `json:"updated"`
+	Error            string `json:"error,omitempty"`
 }
 
 // SyncStatus reads NetBox virtualization clusters of types managed-kubernetes and
@@ -133,6 +134,23 @@ func SyncStatus(
 					result.Updated = true
 				}
 				result.IPAddressID = ipAddr.GetId()
+			}
+
+			// Tailscale endpoint
+			tsDev, tsErr := getKamajiTailscaleDevice(k8sClient, ctx, namespace, nbCluster.Name)
+			if tsErr != nil {
+				slog.Warn("cannot get Tailscale device info", "func", "SyncStatus", "cluster", nbCluster.Name, "error", tsErr.Error())
+			} else if tsDev.Address() != "" {
+				tsIPAddr, tsCreated, tsIPErr := syncTailscaleIPAM(ctx, netboxClient, fhrpGroup.Id, tsDev)
+				if tsIPErr != nil {
+					slog.Warn("cannot sync Tailscale IP to NetBox IPAM", "func", "SyncStatus", "cluster", nbCluster.Name, "error", tsIPErr.Error())
+				} else {
+					result.TailscaleAddress = tsDev.Address()
+					if tsCreated {
+						result.Updated = true
+					}
+					slog.Info("Tailscale IP synced to NetBox IPAM", "func", "SyncStatus", "cluster", nbCluster.Name, "ip", tsIPAddr.GetAddress())
+				}
 			}
 		}
 

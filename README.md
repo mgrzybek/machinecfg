@@ -16,7 +16,7 @@ It automates the generation of configuration files by fetching hardware data and
 * **Butane Templating:** Converts YAML Butane configurations into JSON Ignition files on the fly.
 * **Tinkerbell Automation:** Generates and reconciles Hardware objects to deploy devices using a MaaS.
 * **Talos Linux Automation:** Generates the necessary Machine patches to manage networking.
-* **Cluster Visibility:** Cross-references NetBox virtualization clusters with live CAPI / Kamaji state — readiness, control-plane endpoint, Cilium LB-IPAM addresses and member devices in a single view.
+* **Cluster Visibility:** Cross-references NetBox virtualization clusters with live CAPI / Kamaji state — readiness, control-plane endpoint, Cilium LB-IPAM addresses, Tailscale-exposed endpoints and member devices in a single view.
 * **NetBox Write-back:** Reconciles FHRP groups, IP addresses (with DNS name), ServiceTemplates and Services in NetBox from observed Kubernetes cluster state.
 * **Infrastructure as Code:** Ensures your physical deployment matches your "Source of Truth".
 
@@ -338,10 +338,15 @@ and member devices:
 Example output:
 
 ```console
-NAME          TYPE                    NETBOX-STATUS   CAPI-READY   CONTROL-PLANE   DEVICE-COUNT   DEVICES
-cluster-0     managed-kubernetes      active          true         192.168.3.8     1              cn-0
-management    standalone-kubernetes   active                       10.0.0.1        1              management
+NAME          TYPE                    NETBOX-STATUS   CAPI-READY   CONTROL-PLANE   TAILSCALE                    DEVICE-COUNT   DEVICES
+cluster-0     managed-kubernetes      active          true         192.168.3.8     cluster-0.tailxxxxx.ts.net   1              cn-0
+management    standalone-kubernetes   active                       10.0.0.1                                     1              management
 ```
+
+The `TAILSCALE` column is populated when the `KamajiControlPlane` object carries both
+`tailscale.com/expose=true` and `tailscale.com/hostname` in
+`spec.network.serviceAnnotations`. The address is the MagicDNS FQDN when available,
+falling back to the Tailscale IP.
 
 Filter to a specific cluster:
 
@@ -361,8 +366,13 @@ Output as JSON:
 
 #### Show cluster IP addresses
 
-List the IP addresses advertised via Cilium LB-IPAM for each cluster and cross-reference them
-with NetBox IPAM:
+List the IP addresses advertised by each cluster and cross-reference them with NetBox IPAM.
+Two sources are reported per cluster:
+
+| Source | Description |
+|---|---|
+| `cilium-lb-ipam` | IP from the `io.cilium/lb-ipam-ips` annotation in `KamajiControlPlane.spec.network.serviceAnnotations` |
+| `tailscale` | MagicDNS FQDN (or IP) from the Tailscale operator Secret, when the cluster is Tailscale-exposed |
 
 ```bash
 ./machinecfg \
@@ -374,26 +384,33 @@ with NetBox IPAM:
 Example output:
 
 ```console
-CLUSTER     IP-ADDRESS    NETBOX-ASSIGNED   NETBOX-STATUS
-cluster-0   192.168.3.8   true              active
+CLUSTER     IP-ADDRESS                   SOURCE           NETBOX-ASSIGNED   NETBOX-STATUS
+cluster-0   192.168.3.8                  cilium-lb-ipam   true              active
+cluster-0   cluster-0.tailxxxxx.ts.net   tailscale        false
 ```
 
-The IP is read from the annotation `io.cilium/lb-ipam-ips` in
-`KamajiControlPlane.spec.network.serviceAnnotations`.
+Filter to a specific cluster:
+
+```bash
+./machinecfg ... cluster ipaddr show \
+    --tenants mushroomcloud \
+    --clusters cluster-0
+```
 
 #### Sync cluster status to NetBox
 
 Write back cluster state to NetBox for each Kubernetes cluster. Two NetBox cluster types are supported:
 
-| Type slug               | Control-plane source                      | Cilium IP / FHRP |
-|-------------------------|-------------------------------------------|------------------|
-| `managed-kubernetes`    | CAPI `Cluster` + `KamajiControlPlane`     | Yes              |
-| `standalone-kubernetes` | Primary IP of the headnode DCIM device or VM | No           |
+| Type slug               | Control-plane source                         | Cilium IP / FHRP |
+|-------------------------|----------------------------------------------|------------------|
+| `managed-kubernetes`    | CAPI `Cluster` + `KamajiControlPlane`        | Yes              |
+| `standalone-kubernetes` | Primary IP of the headnode DCIM device or VM | No               |
 
 For each cluster the command ensures the following NetBox records exist:
 
 - an **FHRP group** named after the cluster (protocol: other)
-- for `managed-kubernetes`: the **IP address** advertised by Cilium LB-IPAM, assigned to that FHRP group
+- for `managed-kubernetes`: the **Cilium LB-IPAM address** advertised by Cilium, assigned to that FHRP group
+- for Tailscale-exposed clusters: the **Tailscale IP** registered in NetBox IPAM (a `/32` host prefix is created if no covering prefix exists), also assigned to the same FHRP group
 - a **ServiceTemplate** `Kubernetes endpoint` (TCP, port from `controlPlaneEndpoint`)
 - a **Service** attached to the FHRP group
 
@@ -409,8 +426,8 @@ Clusters of other types are silently skipped.
 Example output:
 
 ```console
-CLUSTER     FHRP-GROUP-ID   IP-ADDRESS-ID   SERVICE-ID   UPDATED   ERROR
-cluster-0   1               13              1            true
+CLUSTER     FHRP-GROUP-ID   IP-ADDRESS-ID   TAILSCALE-ADDRESS   SERVICE-ID   UPDATED   ERROR
+cluster-0   1               13              100.103.162.68      1            true
 ```
 
 Output as JSON (filter updated entries only):

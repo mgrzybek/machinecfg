@@ -240,3 +240,38 @@ func TestShow_NoDevices(t *testing.T) {
 	assert.Equal(t, 0, rows[0].DeviceCount)
 	assert.Empty(t, rows[0].Devices)
 }
+
+// TestShow_TailscaleAddress verifies that a managed-kubernetes cluster with a
+// Tailscale-exposed KamajiControlPlane shows the Tailscale address.
+func TestShow_TailscaleAddress(t *testing.T) {
+	kcp := makeKamajiControlPlaneWithTailscale(testClusterName, testNamespace, "my-cluster")
+	capiCluster := makeCAPIClusterWithStatus(testClusterName, testNamespace, "10.0.0.1", "True")
+	ss := makeTailscaleStatefulSet("ts-my-cluster", testClusterName, testNamespace)
+	secret := makeTailscaleSecret("ts-my-cluster", "my-cluster.tailnet.ts.net", nil)
+	k8sClient := fake.NewClientBuilder().WithObjects(kcp, capiCluster, ss, secret).Build()
+
+	srv := newShowServer(t, 1, testClusterName, "active", []string{})
+	netboxClient := netbox.NewAPIClientFor(srv.URL, "fake-token")
+
+	rows, err := cluster.Show(k8sClient, context.Background(), testNamespace, netboxClient, []string{testClusterName})
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+
+	assert.Equal(t, "my-cluster.tailnet.ts.net", rows[0].TailscaleAddress)
+}
+
+// TestShow_NoTailscaleExposure verifies that a cluster without Tailscale annotations
+// has an empty TailscaleAddress field.
+func TestShow_NoTailscaleExposure(t *testing.T) {
+	capiCluster := makeCAPIClusterWithStatus(testClusterName, testNamespace, "10.0.0.1", "True")
+	k8sClient := fake.NewClientBuilder().WithObjects(capiCluster).Build()
+
+	srv := newShowServer(t, 1, testClusterName, "active", []string{})
+	netboxClient := netbox.NewAPIClientFor(srv.URL, "fake-token")
+
+	rows, err := cluster.Show(k8sClient, context.Background(), testNamespace, netboxClient, []string{testClusterName})
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+
+	assert.Empty(t, rows[0].TailscaleAddress)
+}

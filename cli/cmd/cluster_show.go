@@ -68,14 +68,15 @@ between the two systems are immediately visible.`,
 			fmt.Println(string(jsonData))
 		} else {
 			w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-			_, _ = fmt.Fprintln(w, "NAME\tTYPE\tNETBOX-STATUS\tCAPI-READY\tCONTROL-PLANE\tDEVICE-COUNT\tDEVICES")
+			_, _ = fmt.Fprintln(w, "NAME\tTYPE\tNETBOX-STATUS\tCAPI-READY\tCONTROL-PLANE\tTAILSCALE\tDEVICE-COUNT\tDEVICES")
 			for _, r := range rows {
-				_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%d\t%s\n",
+				_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%d\t%s\n",
 					r.Name,
 					r.Type,
 					r.NetBoxStatus,
 					r.CAPIReady,
 					r.ControlPlaneHost,
+					r.TailscaleAddress,
 					r.DeviceCount,
 					strings.Join(r.Devices, ", "),
 				)

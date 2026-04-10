@@ -189,3 +189,72 @@ func TestShowIPAddresses_NoKamajiObjects(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, rows)
 }
+
+// TestShowIPAddresses_TailscaleRow verifies that a Tailscale-exposed KamajiControlPlane
+// produces an additional row with source="tailscale".
+func TestShowIPAddresses_TailscaleRow(t *testing.T) {
+	kcp := makeKamajiControlPlaneWithTailscale(testClusterName, testNamespace, "my-cluster")
+	ss := makeTailscaleStatefulSet("ts-my-cluster", testClusterName, testNamespace)
+	secret := makeTailscaleSecret("ts-my-cluster", "my-cluster.tailnet.ts.net", []string{"100.64.0.1"})
+	k8sClient := fake.NewClientBuilder().WithObjects(kcp, ss, secret).Build()
+
+	srv := newIPAddrNetboxServer(t, map[string]string{})
+	netboxClient := netbox.NewAPIClientFor(srv.URL, "fake-token")
+
+	rows, err := cluster.ShowIPAddresses(k8sClient, context.Background(), testNamespace, netboxClient, nil)
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+
+	r := rows[0]
+	assert.Equal(t, testClusterName, r.ClusterName)
+	assert.Equal(t, "my-cluster.tailnet.ts.net", r.IPAddress)
+	assert.Equal(t, "tailscale", r.Source)
+	assert.False(t, r.NetBoxAssigned)
+}
+
+// TestShowIPAddresses_TailscaleAndCilium verifies that a cluster with both Cilium and
+// Tailscale endpoints produces one row per source.
+func TestShowIPAddresses_TailscaleAndCilium(t *testing.T) {
+	kcp := makeKamajiControlPlane(testClusterName, testNamespace, "192.168.3.8")
+	// Add Tailscale annotations alongside the existing Cilium annotation in serviceAnnotations
+	if spec, ok := kcp.Object["spec"].(map[string]interface{}); ok {
+		if network, ok := spec["network"].(map[string]interface{}); ok {
+			if sa, ok := network["serviceAnnotations"].(map[string]interface{}); ok {
+				sa["tailscale.com/expose"] = "true"
+				sa["tailscale.com/hostname"] = "my-cluster"
+			}
+		}
+	}
+	ss := makeTailscaleStatefulSet("ts-my-cluster", testClusterName, testNamespace)
+	secret := makeTailscaleSecret("ts-my-cluster", "my-cluster.tailnet.ts.net", nil)
+	k8sClient := fake.NewClientBuilder().WithObjects(kcp, ss, secret).Build()
+
+	srv := newIPAddrNetboxServer(t, map[string]string{"192.168.3.8": "active"})
+	netboxClient := netbox.NewAPIClientFor(srv.URL, "fake-token")
+
+	rows, err := cluster.ShowIPAddresses(k8sClient, context.Background(), testNamespace, netboxClient, nil)
+	require.NoError(t, err)
+	require.Len(t, rows, 2)
+
+	sources := map[string]bool{}
+	for _, r := range rows {
+		sources[r.Source] = true
+	}
+	assert.True(t, sources["cilium-lb-ipam"])
+	assert.True(t, sources["tailscale"])
+}
+
+// TestShowIPAddresses_TailscaleStatefulSetMissing verifies that a missing Tailscale
+// StatefulSet logs a warning but does not fail the whole call.
+func TestShowIPAddresses_TailscaleStatefulSetMissing(t *testing.T) {
+	kcp := makeKamajiControlPlaneWithTailscale(testClusterName, testNamespace, "my-cluster")
+	// No StatefulSet or Secret added
+	k8sClient := fake.NewClientBuilder().WithObjects(kcp).Build()
+
+	srv := newIPAddrNetboxServer(t, map[string]string{})
+	netboxClient := netbox.NewAPIClientFor(srv.URL, "fake-token")
+
+	rows, err := cluster.ShowIPAddresses(k8sClient, context.Background(), testNamespace, netboxClient, nil)
+	require.NoError(t, err)
+	assert.Empty(t, rows) // no Cilium IP, Tailscale lookup failed gracefully
+}

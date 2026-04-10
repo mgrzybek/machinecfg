@@ -28,15 +28,18 @@ var kamajiControlPlaneGVK = schema.GroupVersionKind{
 type IPAddressRow struct {
 	ClusterName    string `json:"cluster-name"`
 	IPAddress      string `json:"ip-address"`
+	Source         string `json:"source,omitempty"`
 	NetBoxAssigned bool   `json:"netbox-assigned"`
 	NetBoxStatus   string `json:"netbox-status,omitempty"`
 }
 
 // ShowIPAddresses lists the IP addresses advertised by Cilium LB-IPAM for each
 // KamajiControlPlane object in the given namespace (filtered by clusterNames when
-// non-empty) and enriches each address with its NetBox IPAM status.
+// non-empty) and enriches each address with its NetBox IPAM status. For clusters
+// that are Tailscale-exposed, the Tailscale device address is appended as an
+// additional row with source="tailscale".
 //
-// The IP is read from the annotation io.cilium/lb-ipam-ips in
+// The Cilium IP is read from the annotation io.cilium/lb-ipam-ips in
 // spec.network.serviceAnnotations of each KamajiControlPlane. Multiple IPs can
 // be listed as a comma-separated value.
 func ShowIPAddresses(
@@ -45,7 +48,7 @@ func ShowIPAddresses(
 	namespace string,
 	netboxClient *netbox.APIClient,
 	clusterNames []string,
-) ([]IPAddressRow, error) {
+) ([]IPAddressRow, error) { //nolint:cyclop
 	list := &unstructured.UnstructuredList{}
 	list.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   kamajiControlPlaneGVK.Group,
@@ -80,35 +83,46 @@ func ShowIPAddresses(
 			}
 		}
 
+		// Cilium LB-IPAM rows
 		annotations, _, err := unstructured.NestedStringMap(obj.Object, "spec", "network", "serviceAnnotations")
 		if err != nil {
 			slog.Warn("cannot read serviceAnnotations", "func", "ShowIPAddresses", "cluster", name, "error", err.Error())
-			continue
-		}
-
-		rawIPs, ok := annotations[ciliumLBIPAnnotation]
-		if !ok || rawIPs == "" {
-			slog.Debug("no Cilium LB-IPAM annotation found", "func", "ShowIPAddresses", "cluster", name)
-			continue
-		}
-
-		for _, ip := range strings.Split(rawIPs, ",") {
-			ip = strings.TrimSpace(ip)
-			if ip == "" {
-				continue
+		} else {
+			rawIPs := annotations[ciliumLBIPAnnotation]
+			if rawIPs == "" {
+				slog.Debug("no Cilium LB-IPAM annotation found", "func", "ShowIPAddresses", "cluster", name)
 			}
+			for _, ip := range strings.Split(rawIPs, ",") {
+				ip = strings.TrimSpace(ip)
+				if ip == "" {
+					continue
+				}
+				assigned, status, ipErr := getNetBoxIPStatus(ctx, netboxClient, ip)
+				if ipErr != nil {
+					slog.Warn("cannot check NetBox IP status", "func", "ShowIPAddresses", "cluster", name, "ip", ip, "error", ipErr.Error())
+				}
+				rows = append(rows, IPAddressRow{
+					ClusterName:    name,
+					IPAddress:      ip,
+					Source:         "cilium-lb-ipam",
+					NetBoxAssigned: assigned,
+					NetBoxStatus:   status,
+				})
+			}
+		}
 
-			assigned, status, err := getNetBoxIPStatus(ctx, netboxClient, ip)
+		// Tailscale endpoint (if the KamajiControlPlane is annotated for exposure)
+		if exposed, _ := IsTailscaleExposed(&obj); exposed {
+			dev, err := GetTailscaleDevice(k8sClient, ctx, name, namespace)
 			if err != nil {
-				slog.Warn("cannot check NetBox IP status", "func", "ShowIPAddresses", "cluster", name, "ip", ip, "error", err.Error())
+				slog.Warn("cannot get Tailscale device address", "func", "ShowIPAddresses", "cluster", name, "error", err.Error())
+			} else {
+				rows = append(rows, IPAddressRow{
+					ClusterName: name,
+					IPAddress:   dev.Address(),
+					Source:      "tailscale",
+				})
 			}
-
-			rows = append(rows, IPAddressRow{
-				ClusterName:    name,
-				IPAddress:      ip,
-				NetBoxAssigned: assigned,
-				NetBoxStatus:   status,
-			})
 		}
 	}
 

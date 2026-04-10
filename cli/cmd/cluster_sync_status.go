@@ -66,10 +66,10 @@ Existing records are left untouched (idempotent).`,
 			fmt.Println(string(jsonData))
 		} else {
 			w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-			_, _ = fmt.Fprintln(w, "CLUSTER\tFHRP-GROUP-ID\tIP-ADDRESS-ID\tSERVICE-ID\tUPDATED\tERROR")
+			_, _ = fmt.Fprintln(w, "CLUSTER\tFHRP-GROUP-ID\tIP-ADDRESS-ID\tSERVICE-ID\tTAILSCALE-ADDRESS\tUPDATED\tERROR")
 			for _, r := range results {
-				_, _ = fmt.Fprintf(w, "%s\t%d\t%d\t%d\t%t\t%s\n",
-					r.ClusterName, r.FHRPGroupID, r.IPAddressID, r.ServiceID, r.Updated, r.Error)
+				_, _ = fmt.Fprintf(w, "%s\t%d\t%d\t%d\t%s\t%t\t%s\n",
+					r.ClusterName, r.FHRPGroupID, r.IPAddressID, r.ServiceID, r.TailscaleAddress, r.Updated, r.Error)
 			}
 			_ = w.Flush()
 		}
