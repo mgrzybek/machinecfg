@@ -113,14 +113,24 @@ func ShowIPAddresses(
 
 		// Tailscale endpoint (if the KamajiControlPlane is annotated for exposure)
 		if exposed, _ := IsTailscaleExposed(&obj); exposed {
-			dev, err := GetTailscaleDevice(k8sClient, ctx, name, namespace)
-			if err != nil {
-				slog.Warn("cannot get Tailscale device address", "func", "ShowIPAddresses", "cluster", name, "error", err.Error())
+			dev, tsErr := GetTailscaleDevice(k8sClient, ctx, name, namespace)
+			if tsErr != nil {
+				slog.Warn("cannot get Tailscale device address", "func", "ShowIPAddresses", "cluster", name, "error", tsErr.Error())
 			} else {
+				var assigned bool
+				var tsStatus string
+				if dev.IP != "" {
+					assigned, tsStatus, tsErr = getNetBoxIPStatus(ctx, netboxClient, dev.IP)
+					if tsErr != nil {
+						slog.Warn("cannot check NetBox IP status", "func", "ShowIPAddresses", "cluster", name, "ip", dev.IP, "error", tsErr.Error())
+					}
+				}
 				rows = append(rows, IPAddressRow{
-					ClusterName: name,
-					IPAddress:   dev.Address(),
-					Source:      "tailscale",
+					ClusterName:    name,
+					IPAddress:      dev.Address(),
+					Source:         "tailscale",
+					NetBoxAssigned: assigned,
+					NetBoxStatus:   tsStatus,
 				})
 			}
 		}

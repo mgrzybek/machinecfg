@@ -325,8 +325,7 @@ cluster state. They do **not** require `--sites` or `--roles`.
 
 #### Show clusters
 
-List all Kubernetes clusters with their NetBox status, CAPI readiness, control-plane endpoint,
-and member devices:
+List all Kubernetes clusters with their NetBox status, CAPI readiness and member devices:
 
 ```bash
 ./machinecfg \
@@ -338,15 +337,10 @@ and member devices:
 Example output:
 
 ```console
-NAME          TYPE                    NETBOX-STATUS   CAPI-READY   CONTROL-PLANE   TAILSCALE                    DEVICE-COUNT   DEVICES
-cluster-0     managed-kubernetes      active          true         192.168.3.8     cluster-0.tailxxxxx.ts.net   1              cn-0
-management    standalone-kubernetes   active                       10.0.0.1                                     1              management
+NAME          TYPE                    NETBOX-STATUS   CAPI-READY   DEVICE-COUNT   DEVICES
+cluster-0     managed-kubernetes      active          true         1              cn-0
+management    standalone-kubernetes   active                       1              management
 ```
-
-The `TAILSCALE` column is populated when the `KamajiControlPlane` object carries both
-`tailscale.com/expose=true` and `tailscale.com/hostname` in
-`spec.network.serviceAnnotations`. The address is the MagicDNS FQDN when available,
-falling back to the Tailscale IP.
 
 Filter to a specific cluster:
 

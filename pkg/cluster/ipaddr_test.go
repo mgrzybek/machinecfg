@@ -244,6 +244,30 @@ func TestShowIPAddresses_TailscaleAndCilium(t *testing.T) {
 	assert.True(t, sources["tailscale"])
 }
 
+// TestShowIPAddresses_TailscaleInNetBox verifies that when the Tailscale IP is present
+// in NetBox IPAM, the row shows NetBoxAssigned=true with the correct status.
+func TestShowIPAddresses_TailscaleInNetBox(t *testing.T) {
+	kcp := makeKamajiControlPlaneWithTailscale(testClusterName, testNamespace, "my-cluster")
+	ss := makeTailscaleStatefulSet("ts-my-cluster", testClusterName, testNamespace)
+	secret := makeTailscaleSecret("ts-my-cluster", "my-cluster.tailnet.ts.net", []string{"100.64.0.1"})
+	k8sClient := fake.NewClientBuilder().WithObjects(kcp, ss, secret).Build()
+
+	// L'IP numérique Tailscale est présente dans NetBox ; la FQDN ne doit pas être cherchée.
+	srv := newIPAddrNetboxServer(t, map[string]string{"100.64.0.1": "active"})
+	netboxClient := netbox.NewAPIClientFor(srv.URL, "fake-token")
+
+	rows, err := cluster.ShowIPAddresses(k8sClient, context.Background(), testNamespace, netboxClient, nil)
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+
+	r := rows[0]
+	assert.Equal(t, testClusterName, r.ClusterName)
+	assert.Equal(t, "my-cluster.tailnet.ts.net", r.IPAddress) // display = FQDN
+	assert.Equal(t, "tailscale", r.Source)
+	assert.True(t, r.NetBoxAssigned)
+	assert.Equal(t, "active", r.NetBoxStatus)
+}
+
 // TestShowIPAddresses_TailscaleStatefulSetMissing verifies that a missing Tailscale
 // StatefulSet logs a warning but does not fail the whole call.
 func TestShowIPAddresses_TailscaleStatefulSetMissing(t *testing.T) {

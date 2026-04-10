@@ -164,7 +164,6 @@ func TestShow_HappyPath(t *testing.T) {
 	assert.Equal(t, testClusterName, r.Name)
 	assert.Equal(t, "active", r.NetBoxStatus)
 	assert.Equal(t, "true", r.CAPIReady)
-	assert.Equal(t, "192.168.1.100", r.ControlPlaneHost)
 	assert.Equal(t, 2, r.DeviceCount)
 	assert.ElementsMatch(t, []string{"node1", "node2"}, r.Devices)
 }
@@ -185,7 +184,6 @@ func TestShow_CAPINotFound(t *testing.T) {
 	assert.Equal(t, testClusterName, r.Name)
 	assert.Equal(t, "active", r.NetBoxStatus)
 	assert.Empty(t, r.CAPIReady, "CAPIReady must be empty when CAPI Cluster is absent")
-	assert.Empty(t, r.ControlPlaneHost, "ControlPlaneHost must be empty when CAPI Cluster is absent")
 	assert.Equal(t, 1, r.DeviceCount)
 }
 
@@ -256,8 +254,6 @@ func TestShow_TailscaleAddress(t *testing.T) {
 	rows, err := cluster.Show(k8sClient, context.Background(), testNamespace, netboxClient, []string{testClusterName})
 	require.NoError(t, err)
 	require.Len(t, rows, 1)
-
-	assert.Equal(t, "my-cluster.tailnet.ts.net", rows[0].TailscaleAddress)
 }
 
 // TestShow_NoTailscaleExposure verifies that a cluster without Tailscale annotations
@@ -272,6 +268,4 @@ func TestShow_NoTailscaleExposure(t *testing.T) {
 	rows, err := cluster.Show(k8sClient, context.Background(), testNamespace, netboxClient, []string{testClusterName})
 	require.NoError(t, err)
 	require.Len(t, rows, 1)
-
-	assert.Empty(t, rows[0].TailscaleAddress)
 }

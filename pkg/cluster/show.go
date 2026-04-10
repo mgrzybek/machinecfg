@@ -17,14 +17,12 @@ import (
 
 // ClusterRow holds the combined NetBox + Kubernetes view of a single cluster.
 type ClusterRow struct {
-	Name             string   `json:"name"`
-	Type             string   `json:"type,omitempty"`
-	NetBoxStatus     string   `json:"netbox-status,omitempty"`
-	CAPIReady        string   `json:"capi-ready,omitempty"`
-	ControlPlaneHost string   `json:"control-plane-host,omitempty"`
-	TailscaleAddress string   `json:"tailscale-address,omitempty"`
-	DeviceCount      int      `json:"device-count"`
-	Devices          []string `json:"devices,omitempty"`
+	Name         string   `json:"name"`
+	Type         string   `json:"type,omitempty"`
+	NetBoxStatus string   `json:"netbox-status,omitempty"`
+	CAPIReady    string   `json:"capi-ready,omitempty"`
+	DeviceCount  int      `json:"device-count"`
+	Devices      []string `json:"devices,omitempty"`
 }
 
 // Show lists NetBox virtualization clusters (filtered by clusterNames when non-empty)
@@ -85,23 +83,8 @@ func Show(
 
 		row.DeviceCount = len(row.Devices)
 
-		switch nbCluster.Type.GetSlug() {
-		case managedKubernetesClusterTypeSlug:
-			host, ready := getCAPIClusterInfo(k8sClient, ctx, namespace, nbCluster.Name)
-			row.ControlPlaneHost = host
-			row.CAPIReady = ready
-			dev, err := getKamajiTailscaleDevice(k8sClient, ctx, namespace, nbCluster.Name)
-			if err != nil {
-				slog.Warn("cannot get Tailscale address", "func", "Show", "cluster", nbCluster.Name, "error", err.Error())
-			} else if dev.Address() != "" {
-				row.TailscaleAddress = dev.Address()
-			}
-		case standaloneKubernetesClusterTypeSlug:
-			host, _, err := getHeadnodeEndpoint(ctx, netboxClient, nbCluster.Id)
-			if err != nil {
-				slog.Warn("cannot get headnode endpoint", "func", "Show", "cluster", nbCluster.Name, "error", err.Error())
-			}
-			row.ControlPlaneHost = host
+		if nbCluster.Type.GetSlug() == managedKubernetesClusterTypeSlug {
+			row.CAPIReady = getCAPIClusterInfo(k8sClient, ctx, namespace, nbCluster.Name)
 		}
 
 		rows = append(rows, row)
@@ -135,8 +118,8 @@ func getClusterVMs(ctx context.Context, netboxClient *netbox.APIClient, clusterI
 }
 
 // getCAPIClusterInfo looks up the CAPI Cluster in Kubernetes and returns the
-// control-plane host and the readiness status ("true", "false", or "" if not found).
-func getCAPIClusterInfo(k8sClient client.Client, ctx context.Context, namespace, name string) (host, ready string) {
+// readiness status ("true", "false", "unknown", or "" if not found).
+func getCAPIClusterInfo(k8sClient client.Client, ctx context.Context, namespace, name string) (ready string) {
 	capiCluster := &unstructured.Unstructured{}
 	capiCluster.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   "cluster.x-k8s.io",
@@ -146,14 +129,12 @@ func getCAPIClusterInfo(k8sClient client.Client, ctx context.Context, namespace,
 
 	if err := k8sClient.Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, capiCluster); err != nil {
 		slog.Debug("CAPI Cluster not found", "func", "getCAPIClusterInfo", "cluster", name, "error", err.Error())
-		return "", ""
+		return ""
 	}
-
-	host, _, _ = unstructured.NestedString(capiCluster.Object, "spec", "controlPlaneEndpoint", "host")
 
 	conditions, found, _ := unstructured.NestedSlice(capiCluster.Object, "status", "conditions")
 	if !found {
-		return host, ""
+		return ""
 	}
 
 	for _, c := range conditions {
@@ -165,15 +146,15 @@ func getCAPIClusterInfo(k8sClient client.Client, ctx context.Context, namespace,
 			if s, ok := cond["status"].(string); ok {
 				switch s {
 				case "True":
-					return host, "true"
+					return "true"
 				case "False":
-					return host, "false"
+					return "false"
 				default:
-					return host, "unknown"
+					return "unknown"
 				}
 			}
 		}
 	}
 
-	return host, ""
+	return ""
 }
