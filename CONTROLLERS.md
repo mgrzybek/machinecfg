@@ -22,6 +22,9 @@ nix-build -A machinecfg-controller-kubernetes-updater-oci -o machinecfg-controll
 # Create the OCI images’ SBOMs
 nix-build -A machinecfg-controller-netbox-updater-oci-sbom     -o machinecfg-controller-netbox-updater-oci-sbom
 nix-build -A machinecfg-controller-kubernetes-updater-oci-sbom -o machinecfg-controller-kubernetes-updater-oci-sbom
+# Create helm packages
+nix-build -A machinecfg-controller-netbox-updater-helm     -o machinecfg-controller-netbox-updater-helm
+nix-build -A machinecfg-controller-kubernetes-updater-helm -o machinecfg-controller-kubernetes-updater-helm
 ```
 
 ### Deploying with Kustomize

@@ -21,6 +21,21 @@ let
     sbomnix --buildtime --cdx=$out/${name}.cdx.json --spdx=$out/${name}.spdx.json --csv=$out/${name}.csv ${pkg}
   '';
 
+  # Generates a Helm package
+  mkHelm = name: version: pkgs.stdenv.mkDerivation {
+    pname = "${name}-helm";
+    version = version;
+
+    src = ./charts;
+
+    nativeBuildInputs = [ pkgs.kubernetes-helm ];
+
+    installPhase = ''
+      helm package ${name} --destination $out
+    '';
+  };
+
+
   machinecfg-package = pkgs.buildGo125Module {
     pname = "machinecfg";
     version = "${version}";
@@ -122,4 +137,8 @@ in rec {
   machinecfg-oci-sbom = mkSbom "machinecfg-oci" machinecfg-oci;
   machinecfg-controller-netbox-updater-oci-sbom = mkSbom "machinecfg-controller-netbox-updater-oci" machinecfg-controller-netbox-updater-oci;
   machinecfg-controller-kubernetes-updater-oci-sbom = mkSbom "machinecfg-controller-kubernetes-updater-oci" machinecfg-controller-kubernetes-updater-oci;
+
+  # Helm charts
+  machinecfg-controller-netbox-updater-helm = mkHelm "machinecfg-controller-netbox-updater" "0.1.0";
+  machinecfg-controller-kubernetes-updater-helm = mkHelm "machinecfg-controller-kubernetes-updater" "0.1.0";
 }
