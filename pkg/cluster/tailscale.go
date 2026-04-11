@@ -115,7 +115,7 @@ func GetTailscaleDevice(k8sClient client.Client, ctx context.Context, clusterNam
 	}
 
 	if dev.IP == "" && dev.FQDN == "" {
-		return tailscaleDevice{}, fmt.Errorf("Tailscale Secret %s/%s contains no device address", tailscaleNamespace, ssName)
+		return tailscaleDevice{}, fmt.Errorf("tailscale secret %s/%s contains no device address", tailscaleNamespace, ssName)
 	}
 
 	return dev, nil
