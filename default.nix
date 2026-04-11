@@ -119,7 +119,7 @@ in rec {
   machinecfg-controller-kubernetes-updater-sbom = mkSbom "machinecfg-controller-kubernetes-updater" machinecfg-controller-kubernetes-updater-package;
 
   # SBOMs: oci images
-  machinecfg-oci-sbom = mkSbom "machinecfg" machinecfg-oci;
+  machinecfg-oci-sbom = mkSbom "machinecfg-oci" machinecfg-oci;
   machinecfg-controller-netbox-updater-oci-sbom = mkSbom "machinecfg-controller-netbox-updater-oci" machinecfg-controller-netbox-updater-oci;
   machinecfg-controller-kubernetes-updater-oci-sbom = mkSbom "machinecfg-controller-kubernetes-updater-oci" machinecfg-controller-kubernetes-updater-oci;
 }
