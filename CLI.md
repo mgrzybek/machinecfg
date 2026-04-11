@@ -301,7 +301,7 @@ Example output:
 
 ```console
 CLUSTER     FHRP-GROUP-ID   IP-ADDRESS-ID   TAILSCALE-ADDRESS   SERVICE-ID   UPDATED   ERROR
-cluster-0   1               13              1xx.xxx.xxx.xxx      1            true
+cluster-0   1               13              1xx.xxx.xxx.xxx     1            true
 ```
 
 Output as JSON (filter updated entries only):
