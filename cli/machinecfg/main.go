@@ -4,7 +4,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 */
 package main
 
-import "machinecfg/cli/cmd"
+import "machinecfg/cli/machinecfg/cmd"
 
 func main() {
 	cmd.Execute()

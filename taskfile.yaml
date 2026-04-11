@@ -3,14 +3,14 @@ tasks:
   default:
     desc: Build everything
     cmds:
-    - task: cli
+    - task: machinecfg
     - task: machinecfg-controller-netbox-updater
     - task: machinecfg-controller-kubernetes-updater
 
-  cli:
+  machinecfg:
     desc: Build the CLI binary
     cmds:
-    - go build -o machinecfg ./cli/
+    - go build -o machinecfg ./cli/machinecfg
 
   test:
     desc: Run unit and integration tests

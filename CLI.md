@@ -5,13 +5,16 @@
 Using `task`:
 
 ```bash
-task cli
+task machinecfg
 ```
 
 Using Nix:
 
 ```bash
-nix-build
+# Create the OCI image
+nix-build -A machinecfg-oci -o machinecfg.tar.gz
+# Create the OCI image’s SBOMs
+nix-build -A machinecfg-oci-sbom -o machinecfg-oci-sbom
 ```
 
 ## ⚙️ Configuration

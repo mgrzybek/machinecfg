@@ -11,6 +11,19 @@ Both controllers support **hot config reload**: updating the ConfigMap or Secret
 
 ---
 
+## 🚀 Installation
+
+### Building images
+
+```bash
+# Create the OCI image
+nix-build -A machinecfg-controller-netbox-updater-oci     -o machinecfg-controller-netbox-updater.tar.gz
+nix-build -A machinecfg-controller-kubernetes-updater-oci -o machinecfg-controller-kubernetes-updater.tar.gz
+# Create the OCI images’ SBOMs
+nix-build -A machinecfg-controller-netbox-updater-oci-sbom     -o machinecfg-controller-netbox-updater-oci-sbom
+nix-build -A machinecfg-controller-kubernetes-updater-oci-sbom -o machinecfg-controller-kubernetes-updater-oci-sbom
+```
+
 ## controller-netbox-updater
 
 Watches Tinkerbell `Hardware` objects and CAPI `Cluster` objects, then writes the observed state back to NetBox.
