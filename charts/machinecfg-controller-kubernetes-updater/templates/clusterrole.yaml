@@ -1,0 +1,18 @@
+---
+# ClusterRole: full lifecycle on Tinkerbell Hardware + read-only on Secrets and StatefulSets.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "machinecfg-controller-kubernetes-updater.fullname" . }}
+  labels:
+    {{- include "machinecfg-controller-kubernetes-updater.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [tinkerbell.org]
+    resources: [hardware]
+    verbs: [get, list, watch, create, update, patch, delete]
+  - apiGroups: [""]
+    resources: [secrets]
+    verbs: [get, list, watch]
+  - apiGroups: [apps]
+    resources: [statefulsets]
+    verbs: [get, list, watch]

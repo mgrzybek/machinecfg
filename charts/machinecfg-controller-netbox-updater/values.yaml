@@ -1,0 +1,45 @@
+image:
+  repository: machinecfg-controller-netbox-updater
+  tag: latest
+  pullPolicy: IfNotPresent
+
+replicaCount: 2
+
+nameOverride: ""
+fullnameOverride: ""
+
+controller:
+  # Set to "false" to disable leader election (e.g. for local dev with a single replica).
+  leaderElect: true
+
+netbox:
+  # Base URL of the NetBox API.
+  endpoint: http://netbox.svc
+  # NetBox API token. Pass via --set-string to avoid shell quoting issues.
+  # Ignored when existingSecret is set.
+  token: ""
+  # Name of an existing Secret containing a `netbox_token` key.
+  # When set, no Secret is created by this chart.
+  existingSecret: ""
+
+config:
+  backend: tinkerbell
+  otel:
+    enabled: false
+    endpoint: ""
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 64Mi
+  limits:
+    cpu: "1"
+    memory: 256Mi
+
+monitoring:
+  prometheusRule:
+    # Deploy a PrometheusRule (requires prometheus-operator).
+    enabled: true
+  grafanaDashboard:
+    # Deploy a Grafana dashboard ConfigMap (requires grafana sidecar with grafana_dashboard=1 label).
+    enabled: true

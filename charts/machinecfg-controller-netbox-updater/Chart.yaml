@@ -1,0 +1,20 @@
+apiVersion: v2
+name: machinecfg-controller-netbox-updater
+description: >
+  Kubernetes controller that watches Tinkerbell Hardware and CAPI Cluster objects
+  and writes the observed state back to NetBox (FHRP groups, IP addresses, Services).
+type: application
+version: 0.1.0
+appVersion: "unstable"
+keywords:
+  - netbox
+  - tinkerbell
+  - capi
+  - kamaji
+  - controller
+home: https://github.com/mgrzybek/machinecfg
+sources:
+  - https://github.com/mgrzybek/machinecfg
+maintainers:
+  - name: Mathieu Grzybek
+    url: https://github.com/mgrzybek

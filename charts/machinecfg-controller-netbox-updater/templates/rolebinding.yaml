@@ -1,0 +1,16 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "machinecfg-controller-netbox-updater.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "machinecfg-controller-netbox-updater.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "machinecfg-controller-netbox-updater.fullname" . }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "machinecfg-controller-netbox-updater.fullname" . }}
+    namespace: {{ .Release.Namespace }}

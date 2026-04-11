@@ -1,0 +1,18 @@
+apiVersion: v2
+name: machinecfg-controller-kubernetes-updater
+description: >
+  Kubernetes controller that polls NetBox on a configurable interval and reconciles
+  Tinkerbell Hardware objects to match the current device inventory.
+type: application
+version: 0.1.0
+appVersion: "unstable"
+keywords:
+  - netbox
+  - tinkerbell
+  - controller
+home: https://github.com/mgrzybek/machinecfg
+sources:
+  - https://github.com/mgrzybek/machinecfg
+maintainers:
+  - name: Mathieu Grzybek
+    url: https://github.com/mgrzybek

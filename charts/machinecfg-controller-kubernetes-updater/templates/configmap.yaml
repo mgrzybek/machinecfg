@@ -1,0 +1,22 @@
+---
+# The controller reads this ConfigMap by the fixed name "kubernetes-updater-config".
+# Do not rename without updating the controller source.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubernetes-updater-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "machinecfg-controller-kubernetes-updater.labels" . | nindent 4 }}
+data:
+  backend: {{ .Values.config.backend | quote }}
+  netbox_endpoint: {{ .Values.netbox.endpoint | quote }}
+  sync_interval: {{ .Values.config.syncInterval | quote }}
+  ignition_variant: {{ .Values.config.ignitionVariant | quote }}
+  sites: {{ .Values.config.filters.sites | quote }}
+  roles: {{ .Values.config.filters.roles | quote }}
+  tenants: {{ .Values.config.filters.tenants | quote }}
+  regions: {{ .Values.config.filters.regions | quote }}
+  locations: {{ .Values.config.filters.locations | quote }}
+  otel_enabled: {{ .Values.config.otel.enabled | toString | quote }}
+  otel_endpoint: {{ .Values.config.otel.endpoint | quote }}

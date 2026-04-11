@@ -1,0 +1,51 @@
+---
+{{- if .Values.monitoring.prometheusRule.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "machinecfg-controller-kubernetes-updater.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "machinecfg-controller-kubernetes-updater.labels" . | nindent 4 }}
+    prometheus: kube-prometheus
+    role: alert-rules
+spec:
+  groups:
+    - name: kubernetes-updater.rules
+      interval: 30s
+      rules:
+        - alert: KubernetesUpdaterDown
+          expr: absent(up{job="kubernetes-updater"} == 1)
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "machinecfg-controller-kubernetes-updater is down"
+            description: >
+              No kubernetes-updater instance has been reachable for more than 5 minutes.
+              NetBox device changes will not be synced to Kubernetes Hardware objects.
+
+        - alert: KubernetesUpdaterHighReconcileErrors
+          expr: |
+            rate(controller_runtime_reconcile_total{controller="netbox-sync",result="error"}[5m]) > 0.1
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "kubernetes-updater netbox-sync reconcile error rate is high"
+            description: >
+              The netbox-sync controller has been producing errors for more than 10 minutes
+              (rate > 0.1/s). Hardware objects may be out of sync with NetBox. Check logs.
+
+        - alert: KubernetesUpdaterSyncStalled
+          expr: |
+            time() - controller_runtime_reconcile_time_seconds_sum{controller="netbox-sync"} > 900
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "kubernetes-updater NetBox sync appears stalled"
+            description: >
+              No successful netbox-sync reconcile has been recorded in the last 15 minutes.
+              The controller may be unable to reach NetBox.
+{{- end }}

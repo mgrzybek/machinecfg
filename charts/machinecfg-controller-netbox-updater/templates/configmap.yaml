@@ -1,0 +1,15 @@
+---
+# The controller reads this ConfigMap by the fixed name "netbox-updater-config".
+# Do not rename without updating the controller source.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: netbox-updater-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "machinecfg-controller-netbox-updater.labels" . | nindent 4 }}
+data:
+  backend: {{ .Values.config.backend | quote }}
+  netbox_endpoint: {{ .Values.netbox.endpoint | quote }}
+  otel_enabled: {{ .Values.config.otel.enabled | toString | quote }}
+  otel_endpoint: {{ .Values.config.otel.endpoint | quote }}

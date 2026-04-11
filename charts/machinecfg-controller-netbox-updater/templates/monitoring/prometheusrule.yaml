@@ -1,0 +1,51 @@
+---
+{{- if .Values.monitoring.prometheusRule.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "machinecfg-controller-netbox-updater.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "machinecfg-controller-netbox-updater.labels" . | nindent 4 }}
+    prometheus: kube-prometheus
+    role: alert-rules
+spec:
+  groups:
+    - name: netbox-updater.rules
+      interval: 30s
+      rules:
+        - alert: NetboxUpdaterDown
+          expr: absent(up{job="netbox-updater"} == 1)
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "machinecfg-controller-netbox-updater is down"
+            description: >
+              No netbox-updater instance has been reachable for more than 5 minutes.
+              NetBox will not be updated when Kubernetes objects change.
+
+        - alert: NetboxUpdaterHighReconcileErrors
+          expr: |
+            rate(controller_runtime_reconcile_total{controller=~"hardware|cluster",result="error"}[5m]) > 0.1
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "netbox-updater reconcile error rate is high"
+            description: >
+              Controller {{ "{{" }} $labels.controller {{ "}}" }} has been producing reconcile errors
+              for more than 10 minutes (rate > 0.1/s). Check controller logs.
+
+        - alert: NetboxUpdaterReconcileQueueDepth
+          expr: |
+            workqueue_depth{name=~"hardware|cluster|config"} > 100
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "netbox-updater work queue is building up"
+            description: >
+              Queue {{ "{{" }} $labels.name {{ "}}" }} depth has been above 100 for more than 5 minutes.
+              The controller may be unable to keep up with the rate of changes.
+{{- end }}

@@ -10,7 +10,8 @@ tasks:
   machinecfg:
     desc: Build the CLI binary
     cmds:
-    - go build -o machinecfg ./cli/machinecfg
+    - mkdir -p out
+    - go build -o out/machinecfg ./cli/machinecfg
 
   test:
     desc: Run unit and integration tests
@@ -34,12 +35,14 @@ tasks:
   machinecfg-controller-netbox-updater:
     desc: Build the NetBox updater controller binary
     cmds:
-    - go build -o machinecfg-controller-netbox-updater ./controllers/controller-netbox-updater/
+    - mkdir -p out
+    - go build -o out/machinecfg-controller-netbox-updater ./controllers/controller-netbox-updater/
 
   machinecfg-controller-kubernetes-updater:
     desc: Build the Kubernetes updater controller binary
     cmds:
-    - go build -o machinecfg-controller-kubernetes-updater ./controllers/controller-kubernetes-updater/
+    - mkdir -p out
+    - go build -o out/machinecfg-controller-kubernetes-updater ./controllers/controller-kubernetes-updater/
 
   clean-tmp:
     desc: Remove temporary files

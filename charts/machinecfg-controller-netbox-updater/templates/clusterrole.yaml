@@ -1,0 +1,28 @@
+---
+# ClusterRole: read-only access to Tinkerbell Hardware, CAPI Cluster, KamajiControlPlane,
+# Services, Tailscale StatefulSets and Secrets.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "machinecfg-controller-netbox-updater.fullname" . }}
+  labels:
+    {{- include "machinecfg-controller-netbox-updater.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [tinkerbell.org]
+    resources: [hardware]
+    verbs: [get, list, watch]
+  - apiGroups: [cluster.x-k8s.io]
+    resources: [clusters]
+    verbs: [get, list, watch]
+  - apiGroups: [controlplane.cluster.x-k8s.io]
+    resources: [kamajicontrolplanes]
+    verbs: [get, list, watch]
+  - apiGroups: [""]
+    resources: [services]
+    verbs: [get, list, watch]
+  - apiGroups: [apps]
+    resources: [statefulsets]
+    verbs: [get, list, watch]
+  - apiGroups: [""]
+    resources: [secrets]
+    verbs: [get, list, watch]
