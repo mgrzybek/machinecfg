@@ -24,6 +24,164 @@ nix-build -A machinecfg-controller-netbox-updater-oci-sbom     -o machinecfg-con
 nix-build -A machinecfg-controller-kubernetes-updater-oci-sbom -o machinecfg-controller-kubernetes-updater-oci-sbom
 ```
 
+### Deploying with Kustomize
+
+The `config/` directory contains ready-to-use Kustomize bases for both controllers. The default namespace is `machinecfg-system`.
+
+```text
+config/
+├── netbox-updater/
+│   ├── kustomization.yaml
+│   ├── configmap.yaml        # netbox_endpoint, backend, otel_*
+│   ├── secret.yaml           # netbox_token placeholder
+│   ├── deployment.yaml
+│   ├── service.yaml
+│   ├── service_account.yaml
+│   ├── role.yaml / cluster_role.yaml + bindings
+│   └── monitoring/
+│       ├── prometheus_rule.yaml
+│       └── grafana_dashboard.yaml
+└── kubernetes-updater/
+    └── (same structure + sites, roles, tenants, sync_interval …)
+```
+
+#### Quickstart — apply the base directly
+
+```bash
+# Preview
+kubectl kustomize config/netbox-updater
+kubectl kustomize config/kubernetes-updater
+
+# Apply
+kubectl apply -k config/netbox-updater
+kubectl apply -k config/kubernetes-updater
+```
+
+> **Before applying**, edit `config/<controller>/secret.yaml` to set the real `netbox_token`, or use an overlay (see below).
+
+#### Production — overlay pattern
+
+Create a minimal overlay that patches only the values that differ from the base (endpoint, token, filters). The base manifests are referenced via a relative path and never modified.
+
+```text
+overlays/
+└── production/
+    ├── kustomization.yaml
+    ├── configmap-patch.yaml
+    └── secret-patch.yaml
+```
+
+**`overlays/production/kustomization.yaml`**
+
+```yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: machinecfg-system
+
+resources:
+  - ../../config/netbox-updater
+  - ../../config/kubernetes-updater
+
+patches:
+  - path: configmap-patch.yaml
+    target:
+      kind: ConfigMap
+      name: netbox-updater-config
+  - path: configmap-patch.yaml
+    target:
+      kind: ConfigMap
+      name: kubernetes-updater-config
+  - path: secret-patch.yaml
+    target:
+      kind: Secret
+      name: netbox-updater-secret
+  - path: secret-patch.yaml
+    target:
+      kind: Secret
+      name: kubernetes-updater-secret
+```
+
+**`overlays/production/configmap-patch.yaml`**
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: netbox-updater-config   # repeat for kubernetes-updater-config
+data:
+  netbox_endpoint: https://netbox.example.com
+```
+
+**`overlays/production/secret-patch.yaml`**
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: netbox-updater-secret   # repeat for kubernetes-updater-secret
+stringData:
+  netbox_token: "your-40-char-token"
+```
+
+> Never commit real tokens. Use [Sealed Secrets](https://github.com/bitnami-labs/sealed-secrets) or an external-secrets operator instead.
+
+Apply the overlay:
+
+```bash
+kubectl apply -k overlays/production
+```
+
+### Deploying with Helm
+
+The `charts/` directory contains two independent Helm charts — one per controller. Install them separately; they can run in different namespaces.
+
+```text
+charts/
+├── machinecfg-controller-netbox-updater/
+└── machinecfg-controller-kubernetes-updater/
+```
+
+#### Quickstart
+
+```bash
+# netbox-updater
+helm install netbox-updater charts/machinecfg-controller-netbox-updater \
+  --namespace machinecfg-system --create-namespace \
+  --set netbox.endpoint=https://netbox.example.com \
+  --set-string netbox.token=$NETBOX_TOKEN
+
+# kubernetes-updater
+helm install kubernetes-updater charts/machinecfg-controller-kubernetes-updater \
+  --namespace machinecfg-system --create-namespace \
+  --set netbox.endpoint=https://netbox.example.com \
+  --set-string netbox.token=$NETBOX_TOKEN \
+  --set config.filters.sites=paris-dc1 \
+  --set config.filters.roles=cattle
+```
+
+#### Key `values.yaml` parameters
+
+| Key | Default | Description |
+| --- | --- | --- |
+| `image.repository` | `machinecfg-controller-<name>` | OCI image repository |
+| `image.tag` | `latest` | Image tag |
+| `replicaCount` | `2` | Number of replicas |
+| `netbox.endpoint` | `http://netbox.svc` | NetBox base URL |
+| `netbox.token` | — | NetBox API token (pass via `--set-string`) |
+| `netbox.existingSecret` | — | Use a pre-existing Secret instead of creating one |
+| `config.backend` | `tinkerbell` | Provisioning backend |
+| `config.otel.enabled` | `false` | Enable OpenTelemetry |
+| `controller.leaderElect` | `true` | Enable leader election |
+| `monitoring.prometheusRule.enabled` | `true` | Deploy PrometheusRule |
+| `monitoring.grafanaDashboard.enabled` | `true` | Deploy Grafana dashboard ConfigMap |
+
+Additional keys for `kubernetes-updater`: `config.syncInterval`, `config.ignitionVariant`, `config.filters.{sites,roles,tenants,regions,locations}`.
+
+> The Secret and ConfigMap names (`netbox-updater-secret`, `netbox-updater-config`, …) are **fixed** — they are hardcoded in the controller source and cannot be overridden via Helm values.
+
+---
+
 ## controller-netbox-updater
 
 Watches Tinkerbell `Hardware` objects and CAPI `Cluster` objects, then writes the observed state back to NetBox.
