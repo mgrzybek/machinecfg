@@ -1,0 +1,14 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: netbox-updater
+  namespace: machinecfg-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: netbox-updater
+subjects:
+  - kind: ServiceAccount
+    name: netbox-updater
+    namespace: machinecfg-system

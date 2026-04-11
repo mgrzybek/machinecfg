@@ -1,0 +1,17 @@
+---
+# Default configuration for machinecfg-controller-netbox-updater.
+# Override netbox_endpoint with the actual NetBox URL in your overlay.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: netbox-updater-config
+  namespace: machinecfg-system
+data:
+  # backend selects the provisioning system to watch: tinkerbell or metal3.
+  backend: tinkerbell
+  # netbox_endpoint is the base URL of the NetBox API.
+  netbox_endpoint: http://netbox.svc
+  # otel_enabled enables OpenTelemetry tracing when set to "true".
+  otel_enabled: "false"
+  # otel_endpoint is the OTLP gRPC collector address (host:port).
+  otel_endpoint: ""

@@ -4,6 +4,8 @@ tasks:
     desc: Build everything
     cmds:
     - task: cli
+    - task: machinecfg-controller-netbox-updater
+    - task: machinecfg-controller-kubernetes-updater
 
   cli:
     desc: Build the CLI binary
@@ -28,6 +30,16 @@ tasks:
     - test -n "$NETBOX_ENDPOINT"
     cmds:
     - go run ./tooling/seed-netbox/
+
+  machinecfg-controller-netbox-updater:
+    desc: Build the NetBox updater controller binary
+    cmds:
+    - go build -o machinecfg-controller-netbox-updater ./controllers/controller-netbox-updater/
+
+  machinecfg-controller-kubernetes-updater:
+    desc: Build the Kubernetes updater controller binary
+    cmds:
+    - go build -o machinecfg-controller-kubernetes-updater ./controllers/controller-kubernetes-updater/
 
   clean-tmp:
     desc: Remove temporary files

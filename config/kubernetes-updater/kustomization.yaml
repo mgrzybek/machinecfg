@@ -1,0 +1,18 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: machinecfg-system
+
+resources:
+  - service_account.yaml
+  - role.yaml
+  - cluster_role.yaml
+  - role_binding.yaml
+  - cluster_role_binding.yaml
+  - configmap.yaml
+  - secret.yaml
+  - deployment.yaml
+  - service.yaml
+  - monitoring/prometheus_rule.yaml
+  - monitoring/grafana_dashboard.yaml

@@ -1,0 +1,27 @@
+---
+# Default configuration for machinecfg-controller-kubernetes-updater.
+# All filters are optional — omitting them syncs all devices visible to the
+# NetBox token.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubernetes-updater-config
+  namespace: machinecfg-system
+data:
+  # backend: tinkerbell (default) or metal3
+  backend: tinkerbell
+  # netbox_endpoint: base URL of the NetBox API
+  netbox_endpoint: http://netbox.svc
+  # sync_interval: how often to poll NetBox (Go duration string)
+  sync_interval: "5m"
+  # ignition_variant: flatcar | fcos | "" (empty = no userData embedded)
+  ignition_variant: ""
+  # Device filters (comma-separated slugs, empty = no filter applied)
+  sites: ""
+  roles: ""
+  tenants: ""
+  regions: ""
+  locations: ""
+  # OpenTelemetry
+  otel_enabled: "false"
+  otel_endpoint: ""

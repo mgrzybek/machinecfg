@@ -106,6 +106,11 @@ func SyncStatus(k8sClient client.Client, ctx context.Context, namespace string, 
 	return results, nil
 }
 
+// SetDeviceStatus is the exported wrapper around setDeviceStatus, for use by controllers.
+func SetDeviceStatus(ctx context.Context, netboxClient *netbox.APIClient, deviceID int32, targetStatus netbox.DeviceStatusValue) (bool, error) {
+	return setDeviceStatus(ctx, netboxClient, deviceID, targetStatus)
+}
+
 // setDeviceStatus transitions a NetBox device to targetStatus only if its current
 // status is not already targetStatus. Returns (true, nil) if the transition was
 // applied, (false, nil) if already at target (no change needed), or (false, err)

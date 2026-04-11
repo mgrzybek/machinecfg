@@ -1,0 +1,30 @@
+---
+# ClusterRole: read-only access to Tinkerbell Hardware and CAPI Cluster objects.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: netbox-updater
+rules:
+  - apiGroups: [tinkerbell.org]
+    resources: [hardware]
+    verbs: [get, list, watch]
+  - apiGroups: [cluster.x-k8s.io]
+    resources: [clusters]
+    verbs: [get, list, watch]
+  # KamajiControlPlane and CAPI-related objects needed by cluster.SyncStatus
+  - apiGroups: [controlplane.cluster.x-k8s.io]
+    resources: [kamajicontrolplanes]
+    verbs: [get, list, watch]
+  # IP address and service queries done by cluster.SyncStatus via the NetBox client.
+  # No direct K8s IPAM objects are needed; NetBox API is called via HTTP.
+  - apiGroups: [""]
+    resources: [services]
+    verbs: [get, list, watch]
+  # Tailscale StatefulSets and Secrets (cluster.SyncStatus, Epic 7).
+  - apiGroups: [apps]
+    resources: [statefulsets]
+    verbs: [get, list, watch]
+  - apiGroups: [""]
+    resources: [secrets]
+    verbs: [get, list, watch]
+    resourceNames: []  # scoped by namespace via Role for controller secrets

@@ -1,0 +1,19 @@
+---
+# ClusterRole: full lifecycle on Tinkerbell Hardware (create/update/delete)
+# + read-only on supporting objects.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubernetes-updater
+rules:
+  - apiGroups: [tinkerbell.org]
+    resources: [hardware]
+    verbs: [get, list, watch, create, update, patch, delete]
+  # Secrets across namespaces: needed to read Tailscale state Secrets referenced
+  # by cluster.SyncStatus (indirect, via ReconcileExistingHardware path).
+  - apiGroups: [""]
+    resources: [secrets]
+    verbs: [get, list, watch]
+  - apiGroups: [apps]
+    resources: [statefulsets]
+    verbs: [get, list, watch]

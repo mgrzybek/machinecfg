@@ -1,0 +1,81 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubernetes-updater-grafana-dashboard
+  namespace: machinecfg-system
+  labels:
+    app: kubernetes-updater
+    grafana_dashboard: "1"
+data:
+  kubernetes-updater.json: |
+    {
+      "title": "machinecfg - Kubernetes Updater Controller",
+      "uid": "machinecfg-kubernetes-updater",
+      "schemaVersion": 38,
+      "refresh": "30s",
+      "time": {"from": "now-1h", "to": "now"},
+      "panels": [
+        {
+          "id": 1,
+          "title": "NetBox Sync Rate (reconciles/s)",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+          "targets": [{
+            "expr": "rate(controller_runtime_reconcile_total{namespace=\"machinecfg-system\",controller=\"netbox-sync\"}[1m])",
+            "legendFormat": "{{result}}"
+          }]
+        },
+        {
+          "id": 2,
+          "title": "Reconcile Error Rate (errors/s)",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+          "targets": [{
+            "expr": "rate(controller_runtime_reconcile_total{namespace=\"machinecfg-system\",result=\"error\"}[1m])",
+            "legendFormat": "{{controller}}"
+          }]
+        },
+        {
+          "id": 3,
+          "title": "Work Queue Depth",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+          "targets": [{
+            "expr": "workqueue_depth{namespace=\"machinecfg-system\"}",
+            "legendFormat": "{{name}}"
+          }]
+        },
+        {
+          "id": 4,
+          "title": "Sync Latency p99 (ms)",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+          "targets": [{
+            "expr": "histogram_quantile(0.99, rate(controller_runtime_reconcile_time_seconds_bucket{namespace=\"machinecfg-system\",controller=\"netbox-sync\"}[5m])) * 1000",
+            "legendFormat": "netbox-sync p99"
+          }]
+        },
+        {
+          "id": 5,
+          "title": "Controller Up",
+          "type": "stat",
+          "gridPos": {"h": 4, "w": 6, "x": 0, "y": 16},
+          "targets": [{
+            "expr": "up{job=\"kubernetes-updater\"}",
+            "legendFormat": "{{pod}}"
+          }]
+        },
+        {
+          "id": 6,
+          "title": "Time Since Last Successful Sync",
+          "type": "stat",
+          "fieldConfig": {"defaults": {"unit": "s"}},
+          "gridPos": {"h": 4, "w": 6, "x": 6, "y": 16},
+          "targets": [{
+            "expr": "time() - controller_runtime_reconcile_time_seconds_sum{controller=\"netbox-sync\",result=\"success\"}",
+            "legendFormat": "seconds ago"
+          }]
+        }
+      ]
+    }
