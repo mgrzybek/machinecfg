@@ -32,6 +32,16 @@ tasks:
     cmds:
     - go run ./tooling/seed-netbox/
 
+  seed-authentik:
+    desc: Configure machinecfg service accounts and groups in Authentik, create NetBox tokens
+    preconditions:
+    - test -n "$AUTHENTIK_ENDPOINT"
+    - test -n "$AUTHENTIK_TOKEN"
+    - test -n "$NETBOX_ENDPOINT"
+    - test -n "$NETBOX_TOKEN"
+    cmds:
+    - go run ./tooling/seed-authentik/
+
   machinecfg-controller-netbox-updater:
     desc: Build the NetBox updater controller binary
     cmds:

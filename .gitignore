@@ -3,7 +3,6 @@
 #
 # Binaries for programs and plugins
 out/
-seed-netbox
 *.exe
 *.exe~
 *.dll
