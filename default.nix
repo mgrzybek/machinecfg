@@ -91,7 +91,7 @@ in rec {
     };
 
     config = {
-      Cmd = [ "/bin/machinecfg/bin/machinecfg" ];
+      Cmd = [ "/bin/machinecfg" ];
       User = "1000:1000";
     };
   };
@@ -108,7 +108,7 @@ in rec {
     };
 
     config = {
-      Cmd = [ "/bin/machinecfg-controller-netbox-updater" ];
+      Cmd = [ "/bin/controller-netbox-updater" ];
       User = "1000:1000";
     };
   };
@@ -123,7 +123,7 @@ in rec {
     };
 
     config = {
-      Cmd = [ "/bin/machinecfg-controller-kubernetes-updater" ];
+      Cmd = [ "/bin/controller-kubernetes-updater" ];
       User = "1000:1000";
     };
   };
