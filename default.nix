@@ -65,6 +65,32 @@ let
     vendorHash = "sha256-E7zWyGqHxahMyXTinIRM0RPE1YeXHtj7TaDfkJMSYdQ=";
   };
 
+  seed-authentik-package = pkgs.buildGo125Module {
+    pname = "seed-authentik";
+    version = "${version}";
+    src = pkgs.lib.cleanSource ./.;
+    meta = meta;
+
+    subPackages = [ "tooling/seed-authentik" ];
+
+    buildFlagsArray = [ "-ldflags" "-s -w" ];
+
+    vendorHash = "sha256-E7zWyGqHxahMyXTinIRM0RPE1YeXHtj7TaDfkJMSYdQ=";
+  };
+
+  seed-netbox-package = pkgs.buildGo125Module {
+    pname = "seed-netbox";
+    version = "${version}";
+    src = pkgs.lib.cleanSource ./.;
+    meta = meta;
+
+    subPackages = [ "tooling/seed-netbox" ];
+
+    buildFlagsArray = [ "-ldflags" "-s -w" ];
+
+    vendorHash = "sha256-E7zWyGqHxahMyXTinIRM0RPE1YeXHtj7TaDfkJMSYdQ=";
+  };
+
   machinecfg-controller-netbox-updater-package = pkgs.buildGo125Module {
     pname = "machinecfg-controller-netbox-updater";
     version = "${version}";
@@ -141,4 +167,12 @@ in rec {
   # Helm charts
   machinecfg-controller-netbox-updater-helm = mkHelm "machinecfg-controller-netbox-updater" "0.1.0";
   machinecfg-controller-kubernetes-updater-helm = mkHelm "machinecfg-controller-kubernetes-updater" "0.1.0";
+
+  # Tooling binaries
+  seed-authentik = seed-authentik-package;
+  seed-netbox = seed-netbox-package;
+
+  # SBOMs: tooling binaries
+  seed-authentik-sbom = mkSbom "seed-authentik" seed-authentik-package;
+  seed-netbox-sbom = mkSbom "seed-netbox" seed-netbox-package;
 }
