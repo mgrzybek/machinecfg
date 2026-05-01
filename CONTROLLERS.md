@@ -238,7 +238,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: netbox-updater-config
-  namespace: tinkerbell
+  namespace: machinecfg-system
 data:
   netbox_endpoint: https://netbox.example.com
   backend: tinkerbell
@@ -248,7 +248,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: netbox-updater-secret
-  namespace: tinkerbell
+  namespace: machinecfg-system
 stringData:
   netbox_token: <your-40-char-token>
 ```
