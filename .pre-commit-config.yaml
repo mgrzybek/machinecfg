@@ -16,8 +16,8 @@ repos:
 - repo: https://github.com/dnephin/pre-commit-golang
   rev: v0.5.1
   hooks:
-  -   id: go-fmt
-  -   id: go-imports
+  - id: go-fmt
+  - id: go-imports
 - repo: local
   hooks:
   - id: go-vet
@@ -26,3 +26,9 @@ repos:
     language: system
     pass_filenames: false
     types: [go]
+  - id: nix-vendor-hash
+    name: nix vendorHash check
+    entry: tooling/check-vendor-hash.sh
+    language: script
+    pass_filenames: false
+    files: ^go\.(mod|sum)$
