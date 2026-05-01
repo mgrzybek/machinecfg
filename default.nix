@@ -48,7 +48,7 @@ let
     # Static binary, stripped for minimal image size.
     buildFlagsArray = [ "-ldflags" "-s -w" ];
 
-    vendorHash = "sha256-E7zWyGqHxahMyXTinIRM0RPE1YeXHtj7TaDfkJMSYdQ=";
+    vendorHash = "sha256-1N/Tvj4VUhpFK+hZCKi30xk2CoGHkpF40Pt5b3nxQq0=";
   };
 
   machinecfg-controller-kubernetes-updater-package = pkgs.buildGo125Module {
@@ -62,7 +62,7 @@ let
     # Static binary, stripped for minimal image size.
     buildFlagsArray = [ "-ldflags" "-s -w" ];
 
-    vendorHash = "sha256-E7zWyGqHxahMyXTinIRM0RPE1YeXHtj7TaDfkJMSYdQ=";
+    vendorHash = "sha256-1N/Tvj4VUhpFK+hZCKi30xk2CoGHkpF40Pt5b3nxQq0=";
   };
 
   seed-authentik-package = pkgs.buildGo125Module {
@@ -75,7 +75,7 @@ let
 
     buildFlagsArray = [ "-ldflags" "-s -w" ];
 
-    vendorHash = "sha256-E7zWyGqHxahMyXTinIRM0RPE1YeXHtj7TaDfkJMSYdQ=";
+    vendorHash = "sha256-1N/Tvj4VUhpFK+hZCKi30xk2CoGHkpF40Pt5b3nxQq0=";
   };
 
   seed-netbox-package = pkgs.buildGo125Module {
@@ -88,7 +88,7 @@ let
 
     buildFlagsArray = [ "-ldflags" "-s -w" ];
 
-    vendorHash = "sha256-E7zWyGqHxahMyXTinIRM0RPE1YeXHtj7TaDfkJMSYdQ=";
+    vendorHash = "sha256-1N/Tvj4VUhpFK+hZCKi30xk2CoGHkpF40Pt5b3nxQq0=";
   };
 
   machinecfg-controller-netbox-updater-package = pkgs.buildGo125Module {
@@ -102,7 +102,7 @@ let
     # Static binary, stripped for minimal image size.
     buildFlagsArray = [ "-ldflags" "-s -w" ];
 
-    vendorHash = "sha256-E7zWyGqHxahMyXTinIRM0RPE1YeXHtj7TaDfkJMSYdQ=";
+    vendorHash = "sha256-1N/Tvj4VUhpFK+hZCKi30xk2CoGHkpF40Pt5b3nxQq0=";
   };
 in rec {
   machinecfg-oci = pkgs.dockerTools.buildImage {
