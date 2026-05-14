@@ -19,10 +19,14 @@ func GetDevices(ctx *context.Context, client *netbox.APIClient, filters DeviceFi
 
 	req := client.DcimAPI.DcimDevicesList(*ctx).
 		HasPrimaryIp(true).
-		Status(filters.Status).
-		Site(filters.Sites).
-		Role(filters.Roles)
+		Status(filters.Status)
 
+	if len(filters.Sites) > 0 && filters.Sites[0] != "" {
+		req = req.Site(filters.Sites)
+	}
+	if len(filters.Roles) > 0 && filters.Roles[0] != "" {
+		req = req.Role(filters.Roles)
+	}
 	if len(filters.Regions) > 0 && filters.Regions[0] != "" {
 		req = req.Region(filters.Regions)
 	}
