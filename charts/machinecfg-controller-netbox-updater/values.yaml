@@ -3,10 +3,10 @@ image:
   tag: latest
   pullPolicy: IfNotPresent
 
-replicaCount: 2
+replicaCount: 1
 
 nameOverride: ""
-fullnameOverride: ""
+fullnameOverride: "machinecfg-controller-netbox-updater"
 
 controller:
   # Set to "false" to disable leader election (e.g. for local dev with a single replica).
