@@ -55,11 +55,15 @@ func GetDevices(ctx *context.Context, client *netbox.APIClient, filters DeviceFi
 	devices, response, err = req.Execute()
 
 	if err != nil {
+		code := 0
 		if response != nil {
-			slog.Error("failed to list devices", "func", "GetDevices", "error", err.Error(), "code", response.StatusCode)
-		} else {
-			slog.Error("failed to list devices", "func", "GetDevices", "error", err.Error())
+			code = response.StatusCode
 		}
+		var body string
+		if apiErr, ok := err.(netbox.GenericOpenAPIError); ok {
+			body = string(apiErr.Body())
+		}
+		slog.Error("failed to list devices", "func", "GetDevices", "error", err.Error(), "code", code, "body", body)
 	}
 
 	return devices, err
