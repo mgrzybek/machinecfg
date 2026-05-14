@@ -7,6 +7,7 @@ package common
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -56,12 +57,17 @@ func GetDevices(ctx *context.Context, client *netbox.APIClient, filters DeviceFi
 
 	if err != nil {
 		code := 0
+		var body string
 		if response != nil {
 			code = response.StatusCode
+			if b, readErr := io.ReadAll(response.Body); readErr == nil {
+				body = string(b)
+			}
 		}
-		var body string
-		if apiErr, ok := err.(netbox.GenericOpenAPIError); ok {
-			body = string(apiErr.Body())
+		if body == "" {
+			if apiErr, ok := err.(netbox.GenericOpenAPIError); ok {
+				body = string(apiErr.Body())
+			}
 		}
 		slog.Error("failed to list devices", "func", "GetDevices", "error", err.Error(), "code", code, "body", body)
 	}
